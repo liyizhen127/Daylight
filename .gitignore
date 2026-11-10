@@ -1,0 +1,62 @@
+# macOS and editor metadata
+.DS_Store
+._*
+.Spotlight-V100/
+.Trashes/
+xcuserdata/
+*.xcuserstate
+.idea/
+.vscode/
+*.swp
+
+# Swift / Xcode output and generated distributions
+.build/
+.swiftpm/
+build/
+build-*/
+DerivedData/
+*.app/
+*.dSYM/
+*.zip
+*.dmg
+*.pkg
+*.xcarchive/
+*.xcresult/
+*.profraw
+*.profdata
+*.log
+
+# Local work, exports and application data
+work/
+outputs/
+private/
+local-data/
+demo-data/
+backups/
+exports/
+Application Support/
+planner*.json
+before-restore-*.json
+.writer.lock
+*-完整备份-*.json
+*-????-??-??.md
+*-周回顾-*.md
+
+# Local credentials and signing material
+.env
+.env.*
+!.env.example
+.netrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+*.keychain
+*.keychain-db
+
+# Local assistant/tooling state
+.codex/
+.agents/
+.claude/
