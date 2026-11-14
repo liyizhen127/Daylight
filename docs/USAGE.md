@@ -18,15 +18,19 @@ Start focus beside a daily task, or select one of today's tasks from the menu ba
 
 Defaults are 25 minutes of focus, a 5-minute short break, and a 15-minute long break after every 4 completed sessions. Change these in Pomodoro and Calendar settings (`⌘,`). New settings apply to the next interval without resetting the current one.
 
-During focus, the menu bar shows the task title and remaining time. During a break, it shows the break type and remaining time. When idle, it shows a monochrome smiling tomato followed by today's completed count. Long titles are shortened; the tooltip retains the full title.
+During focus, the menu bar shows the task title and remaining time; after the deadline, it shows the same task with a `+MM:SS` overtime counter. During a break, it shows the break type and remaining time. When idle, it shows a monochrome smiling tomato followed by today's completed count. Long titles are shortened; the tooltip retains the full title.
 
-A completed focus interval starts a break automatically. After the break, select a task to start another focus interval. You can interrupt focus or skip a break. An interruption saves the actual elapsed interval but does not increment completed counts.
+At the planned focus deadline, a floating, movable window appears automatically and displays elapsed overtime in minutes and seconds. It is non-modal: move it aside to keep working. It stays open until you click Start Break and does not move or reclaim focus every second. No break or completed-session record is generated just by reaching the deadline.
+
+Clicking Start Break finalizes exactly one completed Pomodoro using the actual click time as its end, starts a full short or long break from that moment, and opens a review. Choose great, okay, or poor; optionally write a reflection. The break continues while you write. Review drafts autosave, including after postponing a review; unfinished reviews reappear after relaunch. Recent focus history lets you reopen or edit a review. Ratings and reflections stay local rather than being copied into Calendar.
+
+After the break, select a task to start another focus interval. You can interrupt an unfinished focus interval or skip a break. An early interruption saves the elapsed interval but does not increment completed counts.
 
 Renaming a task preserves its statistics. Finished sessions retain the title used at the time. Deleting a task does not delete its focus history or existing Calendar events.
 
-Timers use wall-clock deadlines. Time continues to pass while the computer sleeps or the app is closed. On wake or relaunch, the app reconciles at most one focus interval and its following break; it does not create further focus sessions automatically. Closing an editing window does not stop a timer.
+Timers use wall-clock deadlines. Time continues to pass while the computer sleeps or the app is closed. On wake or relaunch, an overdue focus session resumes its overtime display until you explicitly start a break. Already-started breaks can expire while the app is away. The app does not create further focus sessions automatically. Closing an editing window does not stop a timer.
 
-A session completed after midnight contributes to the completion day's menu bar count while remaining linked to its original task date.
+A session finalized after midnight contributes to that day's menu bar count while remaining linked to its original task date. The month of the actual finish click determines its harvest month.
 
 ## Monthly harvest
 
@@ -53,16 +57,18 @@ Turn on Calendar sync in Pomodoro and Calendar settings, grant the macOS permiss
 
 Data remains in `~/Library/Application Support/DaylightGoals/`, including after the rename to Daylight. The bundle identifier also remains unchanged.
 
-When loading version 1.x data for the first time:
+Version 2.2 uses schema 3 for planned focus deadlines, session ratings, and reflection drafts. Loading schema 1 or 2 creates an immutable `planner.before-v3.json` backup before writing the upgrade. Existing goals, focus records, calendar settings, and running timers are preserved. Legacy sessions do not generate unwanted review prompts.
+
+For version 1.x data, the previous migration also applies:
 
 1. The original file is preserved as `planner.before-v2.json`; later autosaves do not overwrite this migration backup.
 2. Nonempty goal lines become checklist items. Existing `- [x]` markers retain completion state.
 3. The old actual-completion text moves into daily reflection without dropping historical dates.
-4. Schema version 2 stores tasks, estimates, focus records, timer state, and drafts together.
+4. Tasks, estimates, focus records, timer state, and drafts are stored together in the current schema.
 
 `planner.json` is current data; `planner.previous.json` is the previous save. The full planner provides JSON backup, restore, and Markdown export controls. Restoring preserves the current file first and does not resume a historical running timer from the backup.
 
-Version 1.x apps cannot read schema version 2. Rolling back to 1.x also requires restoring a compatible pre-migration backup.
+Version 2.1 and earlier cannot read schema 3. Rolling back requires restoring a compatible pre-migration backup as well as the old application.
 
 Autosave runs approximately 0.35 seconds after input stops. The native text editor keeps Chinese input-method composition under the input method's control; confirmed text then updates the model. Switching dates or closing windows preserves visible input. Per-second timer updates do not replace marked text.
 

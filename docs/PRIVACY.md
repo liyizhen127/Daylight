@@ -2,13 +2,14 @@
 
 ## Local records
 
-Daylight stores goals, completion state, daily reflections, task drafts, Pomodoro estimates, focus history, and timer settings in `~/Library/Application Support/DaylightGoals/`. Calendar sync also stores the selected calendar identifier, synced event identifiers, and pending-sync state.
+Daylight stores goals, completion state, daily reflections, task drafts, Pomodoro estimates, focus history, session ratings, session reflection drafts, and timer settings in `~/Library/Application Support/DaylightGoals/`. Calendar sync also stores the selected calendar identifier, synced event identifiers, and pending-sync state.
 
 | File | Purpose |
 | --- | --- |
 | `planner.json` | Current data |
 | `planner.previous.json` | Previous save |
 | `planner.before-v2.json` | Original version 1.x data, if a migration occurred |
+| `planner.before-v3.json` | Original data preserved before the version 2.2 upgrade |
 | `before-restore-*.json` | Data preserved before a manual restore |
 | `.writer.lock` | Prevents concurrent writers to the same data directory |
 
@@ -23,6 +24,7 @@ Calendar sync is off by default. Enabling it requests full EventKit access so th
 - A completed or interrupted focus session becomes an event with the task title and actual focus interval.
 - Notes include outcome, task date, elapsed focus seconds, and record identifier. The URL field contains a unique record marker.
 - Deduplication reads events in the relevant interval to inspect their markers. The app does not modify unrelated events or upload their contents to a separate server.
+- Session ratings and reflections remain local and are not included in Calendar notes. Editing a review does not resync the event.
 - Breaks do not create events. Disabling sync does not delete previously created events.
 - Events in iCloud, shared, or other account calendars follow that service's synchronization and sharing settings.
 

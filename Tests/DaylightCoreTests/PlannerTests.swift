@@ -54,7 +54,7 @@ final class PlannerTests: XCTestCase {
     }
     func testValidationRejectsWrongSchemaAndKeys() throws {
         var p = Planner()
-        p.schemaVersion = 3
+        p.schemaVersion = 4
         XCTAssertThrowsError(try p.validate())
         p = Planner(); p.weeks["2026-10-23"] = "非周一"
         XCTAssertThrowsError(try p.validate())

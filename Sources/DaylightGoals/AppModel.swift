@@ -19,6 +19,7 @@ import DaylightCore
     @Published var showingPomodoroSettings = false
     @Published var timerNow = Date()
     @Published var timerMessage = ""
+    @Published private(set) var reviewSessionID: UUID?
     @Published var calendarMessage: String?
     @Published var calendarOptions: [CalendarOption] = []
     @Published var requestingCalendar = false
@@ -35,6 +36,7 @@ import DaylightCore
         disk = try PlannerDisk(directory: directory)
         do {
             planner = try disk.load()
+            reviewSessionID = planner.sessions.last { $0.review != nil && $0.review?.submittedAt == nil }?.id
             if demo && !FileManager.default.fileExists(atPath: disk.file.path) {
                 seedDemo()
                 try disk.save(planner)
@@ -113,10 +115,55 @@ import DaylightCore
     func stopTimer(now: Date = Date()) {
         guard !loadFailed else { return }
         let wasFocus = planner.activeTimer?.phase == .focus
+        let finishingID = planner.activeTimer?.id
         guard planner.stopTimer(now: now) else { return }
+        if let id = finishingID, planner.sessions.contains(where: { $0.id == id && $0.outcome == .completed }) { reviewSessionID = id }
         timerNow = now
         timerMessage = wasFocus ? "本次专注已结束，实际时段已记录。" : "休息已结束，可以选择下一项任务。"
         scheduleSave(); if flush() { syncCalendar() }; onTimerChange?()
+    }
+    func startBreak(now: Date = Date()) {
+        guard !loadFailed else { return }
+        commitActiveTextEditing()
+        guard let id = planner.startBreak(now: now) else { return }
+        timerNow = now; reviewSessionID = id
+        timerMessage = "专注已记录，休息已开始。可以写下这颗番茄的评价。"
+        scheduleSave(); if flush() { syncCalendar(now: now) }; onTimerChange?()
+    }
+    func session(_ id: UUID) -> FocusSession? { planner.sessions.first { $0.id == id } }
+    func showReview(_ id: UUID) {
+        guard !loadFailed, let i = planner.sessions.firstIndex(where: { $0.id == id && $0.outcome == .completed }) else { return }
+        commitActiveTextEditing()
+        if planner.sessions[i].review == nil { planner.sessions[i].review = FocusReview(); scheduleSave() }
+        reviewSessionID = id; onTimerChange?()
+    }
+    func setReviewRating(_ rating: FocusRating, sessionID: UUID) {
+        updateReview(sessionID) { $0.rating = rating }
+    }
+    func reviewReflectionBinding(_ id: UUID) -> Binding<String> {
+        Binding(get: { self.session(id)?.review?.reflection ?? "" }, set: { text in
+            self.updateReview(id) { $0.reflection = text }
+        })
+    }
+    private func updateReview(_ id: UUID, change: (inout FocusReview) -> Void) {
+        guard !loadFailed, let i = planner.sessions.firstIndex(where: { $0.id == id && $0.outcome == .completed }) else { return }
+        var review = planner.sessions[i].review ?? FocusReview()
+        change(&review)
+        guard review != planner.sessions[i].review else { return }
+        planner.sessions[i].review = review; scheduleSave()
+    }
+    @discardableResult func submitReview(_ id: UUID, now: Date = Date()) -> Bool {
+        commitActiveTextEditing()
+        guard session(id)?.review?.rating != nil else { return false }
+        updateReview(id) { $0.submittedAt = now }
+        guard flush() else { return false }
+        if reviewSessionID == id { reviewSessionID = nil }
+        onTimerChange?(); return true
+    }
+    @discardableResult func dismissReview() -> Bool {
+        commitActiveTextEditing()
+        guard flush() else { return false }
+        reviewSessionID = nil; onTimerChange?(); return true
     }
     func tick(now: Date = Date()) {
         refreshClock()
@@ -124,8 +171,8 @@ import DaylightCore
         guard !loadFailed else { return }
         let transitions = planner.advanceTimer(now: now)
         if !transitions.isEmpty {
-            timerMessage = transitions.contains(.breakCompleted) ? "休息结束，准备好后开始下一颗番茄。" : "完成一颗番茄，开始\(planner.activeTimer?.phase.title ?? "休息")。"
-            scheduleSave(); if flush(), transitions.contains(.focusCompleted) { syncCalendar(now: now) }
+            timerMessage = "休息结束，准备好后开始下一颗番茄。"
+            scheduleSave(); _ = flush()
         }
         if now.timeIntervalSince(lastSyncAttempt) >= 60 && planner.sessions.contains(where: { $0.calendarState == .pending }) { syncCalendar(now: now) }
         onTimerChange?()
@@ -272,6 +319,8 @@ import DaylightCore
             var restored = incoming
             restored.activeTimer = nil // A backup never resumes a historical running timer.
             planner = try disk.restore(PlannerDisk.encode(restored))
+            reviewSessionID = planner.sessions.last { $0.review != nil && $0.review?.submittedAt == nil }?.id
+            onTimerChange?()
             dirty = false; loadFailed = false; saveError = nil; saveStatus = "备份已恢复"
         } catch { showError(error) }
     }

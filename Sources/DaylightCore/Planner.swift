@@ -124,7 +124,7 @@ public enum PlannerError: Error, LocalizedError {
 }
 
 public struct Planner: Codable, Equatable, Sendable {
-    public var schemaVersion = 2
+    public var schemaVersion = 3
     public var longTermTasks: [GoalTask] = []
     public var monthTasks: [String: [GoalTask]] = [:]
     public var weekTasks: [String: [GoalTask]] = [:]
@@ -154,7 +154,7 @@ public struct Planner: Codable, Equatable, Sendable {
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let version = try c.decode(Int.self, forKey: .schemaVersion)
-        guard (1...2).contains(version) else { throw PlannerError.unsupportedVersion }
+        guard (1...3).contains(version) else { throw PlannerError.unsupportedVersion }
         days = try c.decode([String: DayRecord].self, forKey: .days)
         if version == 1 {
             longTermTasks = GoalTask.parse(try c.decode(String.self, forKey: .longTerm))
@@ -216,7 +216,7 @@ public struct Planner: Codable, Equatable, Sendable {
         sessions.filter { $0.outcome == .completed && Day($0.endedAt) == day }.count
     }
     public func validate() throws {
-        guard schemaVersion == 2 else { throw PlannerError.unsupportedVersion }
+        guard schemaVersion == 3 else { throw PlannerError.unsupportedVersion }
         for key in monthTasks.keys {
             guard key.count == 7, Day(rawValue: key + "-01").date() != nil else { throw PlannerError.invalidData }
         }

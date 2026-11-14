@@ -33,7 +33,7 @@ public final class PlannerDisk {
         guard FileManager.default.fileExists(atPath: file.path) else { return Planner() }
         let data = try Data(contentsOf: file)
         let planner = try Self.decode(data)
-        if (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["schemaVersion"] as? Int == 1 {
+        if let version = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["schemaVersion"] as? Int, version < 3 {
             try save(planner)
         }
         return planner
@@ -45,6 +45,10 @@ public final class PlannerDisk {
             _ = try Self.decode(old) // Never overwrite a corrupt original silently.
             if (try? JSONSerialization.jsonObject(with: old) as? [String: Any])?["schemaVersion"] as? Int == 1 {
                 let archive = directory.appendingPathComponent("planner.before-v2.json")
+                if !FileManager.default.fileExists(atPath: archive.path) { try writePrivate(old, to: archive) }
+            }
+            if let version = (try? JSONSerialization.jsonObject(with: old) as? [String: Any])?["schemaVersion"] as? Int, version < 3 {
+                let archive = directory.appendingPathComponent("planner.before-v3.json")
                 if !FileManager.default.fileExists(atPath: archive.path) { try writePrivate(old, to: archive) }
             }
             try writePrivate(old, to: backup)

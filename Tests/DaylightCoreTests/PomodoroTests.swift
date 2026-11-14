@@ -34,26 +34,37 @@ final class PomodoroTests: XCTestCase {
             XCTAssertEqual(p.tasks(scope, on: day), tasks)
         }
     }
-    func testCompletionIsExactlyOnceAndLongBreakCadence() throws {
+    func testManualCompletionIsExactlyOnceAndLongBreakCadence() throws {
         var p = planner(); let task = p.record(on: day).tasks[0]
         XCTAssertTrue(p.startFocus(taskID: task.id, on: day, now: start))
         XCTAssertFalse(p.startFocus(taskID: task.id, on: day, now: start))
+        XCTAssertNil(p.startBreak(now: start.addingTimeInterval(59)))
         XCTAssertEqual(p.activeTimer?.remaining(at: start.addingTimeInterval(1.2)), 59)
-        XCTAssertEqual(p.advanceTimer(now: start.addingTimeInterval(59)), [])
-        XCTAssertEqual(p.advanceTimer(now: start.addingTimeInterval(60)), [.focusCompleted])
+        XCTAssertEqual(p.advanceTimer(now: start.addingTimeInterval(60)), [])
+        XCTAssertEqual(p.activeTimer?.phase, .focus)
+        XCTAssertEqual(p.sessions.count, 0)
+        XCTAssertEqual(p.cycleCompleted, 0)
+        XCTAssertEqual(p.activeTimer?.overtimeSeconds(at: start.addingTimeInterval(95.9)), 35)
+        let sessionID = try XCTUnwrap(p.startBreak(now: start.addingTimeInterval(95)))
+        XCTAssertNil(p.startBreak(now: start.addingTimeInterval(96)))
+        XCTAssertEqual(p.sessions[0].id, sessionID)
+        XCTAssertEqual(p.sessions[0].durationSeconds, 95)
+        XCTAssertEqual(p.sessions[0].overtimeSeconds, 35)
+        XCTAssertEqual(p.activeTimer?.startedAt, start.addingTimeInterval(95))
         XCTAssertEqual(p.activeTimer?.phase, .shortBreak)
+        XCTAssertEqual(p.activeTimer?.remaining(at: start.addingTimeInterval(95)), 60)
         XCTAssertEqual(p.actualPomodoros(taskID: task.id, on: day), 1)
-        XCTAssertEqual(p.advanceTimer(now: start.addingTimeInterval(61)), [])
-        XCTAssertEqual(p.advanceTimer(now: start.addingTimeInterval(120)), [.breakCompleted])
-        XCTAssertNil(p.activeTimer)
-        XCTAssertTrue(p.startFocus(taskID: task.id, on: day, now: start.addingTimeInterval(120)))
-        p.advanceTimer(now: start.addingTimeInterval(180))
+        XCTAssertEqual(p.advanceTimer(now: start.addingTimeInterval(155)), [.breakCompleted])
+        XCTAssertTrue(p.startFocus(taskID: task.id, on: day, now: start.addingTimeInterval(155)))
+        p.advanceTimer(now: start.addingTimeInterval(250))
+        XCTAssertEqual(p.sessions.count, 1)
+        XCTAssertNotNil(p.startBreak(now: start.addingTimeInterval(260)))
         XCTAssertEqual(p.activeTimer?.phase, .longBreak)
-        XCTAssertEqual(p.activeTimer?.remaining(at: start.addingTimeInterval(180)), 180)
+        XCTAssertEqual(p.activeTimer?.remaining(at: start.addingTimeInterval(260)), 180)
         XCTAssertEqual(p.cycleCompleted, 0)
         XCTAssertEqual(p.completedPomodoros(on: Day(start)), 2)
         XCTAssertEqual(p.sessions.count, 2)
-        XCTAssertFalse(p.record(on: day).tasks[0].isCompleted, "Finishing a tomato does not finish the whole task")
+        XCTAssertFalse(p.record(on: day).tasks[0].isCompleted)
     }
     func testInterruptRecordsActualTimesButDoesNotCount() {
         var p = planner(); p.pomodoro.calendarEnabled = true; p.pomodoro.calendarIdentifier = "selected-calendar"
@@ -77,22 +88,29 @@ final class PomodoroTests: XCTestCase {
         XCTAssertNil(p.activeTimer)
         XCTAssertEqual(p.actualPomodoros(taskID: id, on: day), 1)
     }
-    func testSleepAndRestartOnlyCompleteOneFocus() throws {
+    func testSleepAndRestartKeepOvertimeUntilUserStartsBreak() throws {
         var p = planner(); let id = p.record(on: day).tasks[0].id
         p.startFocus(taskID: id, on: day, now: start)
+        let timerID = p.activeTimer?.id
         p = try PlannerDisk.decode(PlannerDisk.encode(p))
-        XCTAssertEqual(p.advanceTimer(now: start.addingTimeInterval(5000)), [.focusCompleted, .breakCompleted])
-        XCTAssertNil(p.activeTimer)
+        XCTAssertEqual(p.advanceTimer(now: start.addingTimeInterval(5000)), [])
+        XCTAssertEqual(p.activeTimer?.id, timerID)
+        XCTAssertEqual(p.activeTimer?.overtimeSeconds(at: start.addingTimeInterval(5000)), 4940)
+        XCTAssertEqual(p.sessions.count, 0)
+        p = try PlannerDisk.decode(PlannerDisk.encode(p))
+        XCTAssertNotNil(p.startBreak(now: start.addingTimeInterval(6000)))
         XCTAssertEqual(p.sessions.count, 1)
-        XCTAssertEqual(p.sessions[0].endedAt, start.addingTimeInterval(60))
+        XCTAssertEqual(p.sessions[0].endedAt, start.addingTimeInterval(6000))
+        XCTAssertEqual(p.activeTimer?.remaining(at: start.addingTimeInterval(6000)), 60)
         p = try PlannerDisk.decode(PlannerDisk.encode(p))
-        XCTAssertEqual(p.advanceTimer(now: start.addingTimeInterval(6000)), [])
+        XCTAssertEqual(p.advanceTimer(now: start.addingTimeInterval(7000)), [.breakCompleted])
+        XCTAssertNil(p.activeTimer)
         XCTAssertEqual(p.sessions.count, 1)
     }
     func testTaskRenameAndDeletionRetainFocusHistory() {
         var p = planner(); var tasks = p.record(on: day).tasks; let id = tasks[0].id
         p.startFocus(taskID: id, on: day, now: start)
-        p.advanceTimer(now: start.addingTimeInterval(60))
+        p.startBreak(now: start.addingTimeInterval(60))
         tasks[0].title = "新名字"; p.setTasks(tasks, scope: nil, on: day)
         XCTAssertEqual(p.actualPomodoros(taskID: id, on: day), 1)
         p.setTasks([], scope: nil, on: day)
@@ -103,8 +121,9 @@ final class PomodoroTests: XCTestCase {
         var p = planner(); let id = p.record(on: day).tasks[0].id
         let nextDay = day.adding(1)
         let midnight = Calendar.planner.startOfDay(for: nextDay.date()!)
-        p.startFocus(taskID: id, on: day, now: midnight.addingTimeInterval(-30))
-        p.advanceTimer(now: midnight.addingTimeInterval(30))
+        p.startFocus(taskID: id, on: day, now: midnight.addingTimeInterval(-90))
+        p.advanceTimer(now: midnight.addingTimeInterval(-30))
+        p.startBreak(now: midnight.addingTimeInterval(30))
         XCTAssertEqual(p.completedPomodoros(on: day), 0)
         XCTAssertEqual(p.completedPomodoros(on: nextDay), 1)
         XCTAssertEqual(p.actualPomodoros(taskID: id, on: day), 1)
@@ -113,7 +132,7 @@ final class PomodoroTests: XCTestCase {
     func testDisabledCalendarAndBreaksNeverGeneratePendingEvents() {
         var p = planner(); let id = p.record(on: day).tasks[0].id
         p.startFocus(taskID: id, on: day, now: start)
-        p.advanceTimer(now: start.addingTimeInterval(60))
+        p.startBreak(now: start.addingTimeInterval(60))
         p.stopTimer(now: start.addingTimeInterval(70))
         XCTAssertEqual(p.sessions.count, 1)
         XCTAssertEqual(p.sessions[0].calendarState, .notRequested)
@@ -132,7 +151,7 @@ final class PomodoroTests: XCTestCase {
         let legacy = Data(#"{"schemaVersion":1,"longTerm":"长期方向\n- [x] 已完成方向","months":{"2026-11":"月目标"},"weeks":{"2026-11-09":"周目标"},"days":{"2026-11-10":{"expected":"第一件事\n第二件事","actual":"旧版实际完成\n保留 🌱","modifiedAt":"2026-11-10T01:00:00Z"}}}"#.utf8)
         try legacy.write(to: disk.file)
         let p = try disk.load()
-        XCTAssertEqual(p.schemaVersion, 2)
+        XCTAssertEqual(p.schemaVersion, 3)
         XCTAssertEqual(p.record(on: day).tasks.map(\.title), ["第一件事", "第二件事"])
         XCTAssertEqual(p.record(on: day).reflection, "旧版实际完成\n保留 🌱")
         XCTAssertTrue(p.longTermTasks[1].isCompleted)
@@ -140,5 +159,32 @@ final class PomodoroTests: XCTestCase {
         XCTAssertEqual(try disk.load(), p)
         try disk.save(p); try disk.save(p)
         XCTAssertEqual(try Data(contentsOf: directory.appendingPathComponent("planner.before-v2.json")), legacy)
+    }
+
+    func testVersionTwoMigrationPreservesLegacySessionsAndPermanentBackup() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("DaylightV3Migration-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let disk = try PlannerDisk(directory: directory)
+        var p = planner(); let id = p.record(on: day).tasks[0].id
+        p.startFocus(taskID: id, on: day, now: start)
+        p.startBreak(now: start.addingTimeInterval(60))
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: PlannerDisk.encode(p)) as? [String: Any])
+        json["schemaVersion"] = 2
+        var sessions = try XCTUnwrap(json["sessions"] as? [[String: Any]])
+        sessions[0].removeValue(forKey: "plannedEndsAt"); sessions[0].removeValue(forKey: "review")
+        json["sessions"] = sessions
+        let legacy = try JSONSerialization.data(withJSONObject: json)
+        try legacy.write(to: disk.file)
+        var loaded = try disk.load()
+        XCTAssertEqual(loaded.schemaVersion, 3)
+        XCTAssertEqual(loaded.sessions.count, 1)
+        XCTAssertNil(loaded.sessions[0].review)
+        XCTAssertEqual(loaded.sessions[0].overtimeSeconds, 0)
+        XCTAssertEqual(loaded.activeTimer, p.activeTimer)
+        loaded.sessions[0].review = FocusReview(rating: .great, reflection: "保持专注 🌱", submittedAt: start.addingTimeInterval(70))
+        try disk.save(loaded)
+        XCTAssertEqual(try disk.load(), loaded)
+        XCTAssertEqual(try Data(contentsOf: directory.appendingPathComponent("planner.before-v3.json")), legacy)
+        XCTAssertThrowsError(try PlannerDisk.decode(Data(#"{"schemaVersion":4}"#.utf8)))
     }
 }

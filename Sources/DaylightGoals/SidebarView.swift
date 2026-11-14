@@ -159,12 +159,12 @@ struct HelpView: View {
                 Image(systemName: "sun.horizon").font(.system(size: 31, weight: .light)).foregroundStyle(Palette.green)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Daylight").font(.system(size: 22, weight: .semibold))
-                    Text("每一天，都有方向。  v2.1.1").font(.system(size: 12)).foregroundStyle(Palette.secondary)
+                    Text("每一天，都有方向。  v2.2.0").font(.system(size: 12)).foregroundStyle(Palette.secondary)
                 }
                 Spacer()
             }
             Divider()
-            helpRow("menubar.rectangle", "状态栏挂衣绳", "左键状态栏展开挂衣绳，右键选择今天的任务开始专注。计时中显示名称与剩余时间，空闲时显示今日完成数。番茄设置中可配置休息和日历同步。")
+            helpRow("menubar.rectangle", "状态栏挂衣绳", "左键状态栏展开挂衣绳，右键选择今天的任务开始专注。计时中显示名称与剩余时间，空闲时显示今日完成数。到时弹出额外专注窗口，点击开始休息后可评价并写感受。番茄设置中可查看记录、配置休息和日历同步。")
             helpRow("mountain.2", "长期目标", "所有日期共用同一份内容，持续保留；修改后会在所有日期显示最新内容。")
             helpRow("calendar", "月目标与周目标", "月目标按自然月保存，周目标按周一到周日保存。新周期从空白开始，切换日期即可查看、修改历史或未来目标。")
             helpRow("sun.max", "任务清单 / 每日反思", "所有目标都支持勾选并保留划线任务。日目标可以预估番茄数，完整完成一次专注会累计实际数量；下方单独记录每日反思。")

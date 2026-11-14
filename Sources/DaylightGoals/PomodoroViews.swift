@@ -9,16 +9,19 @@ struct PomodoroBar: View {
         HStack(spacing: 14) {
             Text("🍅").font(.system(size: 24))
             if let active = model.planner.activeTimer {
+                let overtime = active.isOvertime(at: model.timerNow)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(active.phase == .focus ? active.title : "\(active.phase.title) · \(active.title)")
                         .font(.system(size: 13, weight: .semibold)).lineLimit(1)
-                    Text(active.phase == .focus ? "专注完成后自动开始休息" : "休息结束后，自主选择下一项任务")
+                    Text(overtime ? "额外专注中，准备好后再开始休息" : active.phase == .focus ? "到时会弹窗，点击开始休息才结束专注" : "休息结束后，自主选择下一项任务")
                         .font(.system(size: 10)).foregroundStyle(Palette.secondary)
                 }
                 Spacer(minLength: 6)
-                Text(timerText(active.remaining(at: model.timerNow)))
+                Text(overtime ? "+" + timerText(active.overtimeSeconds(at: model.timerNow)) : timerText(active.remaining(at: model.timerNow)))
                     .font(.system(size: 22, weight: .semibold, design: .rounded)).monospacedDigit()
-                Button(active.phase == .focus ? "中断" : "跳过休息") { model.stopTimer() }.buttonStyle(QuietButton())
+                Button(overtime ? "开始休息" : active.phase == .focus ? "中断" : "跳过休息") {
+                    if overtime { model.startBreak() } else { model.stopTimer() }
+                }.buttonStyle(QuietButton())
             } else {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("今日完成 \(model.planner.completedPomodoros(on: model.today)) 颗番茄")
@@ -53,7 +56,7 @@ struct PomodoroSettingsView: View {
                         duration("普通休息", value: number(\.shortBreakMinutes), range: 1...60, suffix: "分钟")
                         duration("每完成", value: number(\.longBreakEvery), range: 1...12, suffix: "颗番茄，进入长休息")
                         duration("长休息", value: number(\.longBreakMinutes), range: 1...120, suffix: "分钟")
-                        Text("专注结束自动进入休息；下一次专注由你开始。设置用于下一段计时。完整专注计 1 颗，中断保留时段但不计入完成数。")
+                        Text("到时自动弹出额外专注窗口，点击开始休息后结算 1 颗番茄并填写评价。额外专注计入实际时长；提前中断不计完成数。设置用于下一段计时。")
                             .font(.system(size: 11)).foregroundStyle(Palette.secondary).frame(maxWidth: .infinity, alignment: .leading)
                     }.padding(18).background(.white, in: RoundedRectangle(cornerRadius: 14))
                     VStack(alignment: .leading, spacing: 13) {
@@ -83,6 +86,7 @@ struct PomodoroSettingsView: View {
                         Text("最近专注记录").font(.system(size: 13, weight: .semibold))
                         if model.planner.sessions.isEmpty { Text("完成或中断一次专注后，会显示在这里。").font(.system(size: 11)).foregroundStyle(Palette.secondary) }
                         ForEach(Array(model.planner.sessions.suffix(20).reversed())) { session in
+                            VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(session.title).font(.system(size: 12)).lineLimit(1)
@@ -93,6 +97,19 @@ struct PomodoroSettingsView: View {
                                 Text(session.outcome == .completed ? "已完成" : "已中断").font(.system(size: 11))
                                 Text(session.calendarState == .synced ? "已同步" : session.calendarState == .pending ? "待同步" : "本地")
                                     .font(.system(size: 10)).foregroundStyle(Palette.secondary)
+                            }
+                            HStack {
+                                Text("实际 \(durationText(session.durationSeconds)) · 额外 \(durationText(session.overtimeSeconds))")
+                                    .font(.system(size: 10)).foregroundStyle(Palette.secondary)
+                                Spacer()
+                                if session.outcome == .completed {
+                                    Button(session.review?.rating.map { "\($0.title) · 编辑评价" } ?? "补充评价") { model.showReview(session.id) }
+                                        .font(.system(size: 11))
+                                }
+                            }
+                            if let reflection = session.review?.reflection, !reflection.isEmpty {
+                                Text(reflection).font(.system(size: 11)).foregroundStyle(Palette.ink).lineLimit(3).textSelection(.enabled)
+                            }
                             }
                             Divider()
                         }

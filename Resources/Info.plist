@@ -8,8 +8,8 @@
     <key>CFBundleIdentifier</key><string>local.daylight.goals</string>
     <key>CFBundleName</key><string>Daylight</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>2.1.1</string>
-    <key>CFBundleVersion</key><string>6</string>
+    <key>CFBundleShortVersionString</key><string>2.2.0</string>
+    <key>CFBundleVersion</key><string>7</string>
     <key>LSUIElement</key><true/>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>NSCalendarsFullAccessUsageDescription</key><string>将你完成或中断的番茄钟按实际起止时间写入所选日历，并检查记录编号以避免重复创建。</string>

@@ -23,6 +23,7 @@ final class ClotheslinePanel: NSPanel {
     var timer: Timer?
     var clothesline: ClotheslinePanel!
     var goalEditor: NSWindow?
+    var focusPrompt: FocusPromptController?
     var globalClickMonitor: Any?
     var localClickMonitor: Any?
     var restoreClothesline = false
@@ -58,7 +59,11 @@ final class ClotheslinePanel: NSPanel {
         setupStatusItem()
         createClothesline()
         showClothesline()
-        model.onTimerChange = { [weak self] in self?.updateStatusItem() }
+        focusPrompt = FocusPromptController(model: model)
+        model.onTimerChange = { [weak self] in
+            self?.updateStatusItem()
+            self?.focusPrompt?.refresh()
+        }
         model.tick()
         timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.model.tick() }
@@ -126,14 +131,15 @@ final class ClotheslinePanel: NSPanel {
         guard let button = statusItem?.button, let model else { return }
         if let active = model.planner.activeTimer {
             let name = active.phase == .focus ? active.title : active.phase.title
-            let time = timerText(active.remaining(at: model.timerNow))
+            let overtime = active.isOvertime(at: model.timerNow)
+            let time = overtime ? "+" + timerText(active.overtimeSeconds(at: model.timerNow)) : timerText(active.remaining(at: model.timerNow))
             let key = "\(name)-\(time)-\(button.effectiveAppearance.name.rawValue)"
             guard key != statusKey else { return }; statusKey = key
             button.title = ""
             button.imagePosition = .imageOnly
             button.image = StatusBadge.image(name: name, time: time)
-            button.toolTip = "\(active.phase.title) · \(active.title) · 剩余 \(time)\n左键挂衣绳 · 右键选择番茄任务"
-            button.setAccessibilityLabel("\(active.phase.title) \(active.title) 剩余 \(time)")
+            button.toolTip = "\(active.title) · \(overtime ? "额外专注" : active.phase.title) \(time)\n左键挂衣绳 · 右键控制番茄钟"
+            button.setAccessibilityLabel("\(active.title) \(overtime ? "额外专注" : "剩余") \(time)")
         } else {
             let count = model.planner.completedPomodoros(on: model.today)
             let key = "idle-\(count)"
@@ -159,9 +165,16 @@ final class ClotheslinePanel: NSPanel {
         model.tick()
         let menu = NSMenu()
         if let active = model.planner.activeTimer {
-            let info = NSMenuItem(title: "\(active.phase.title)：\(active.title)  \(timerText(active.remaining(at: model.timerNow)))", action: nil, keyEquivalent: "")
+            let overtime = active.isOvertime(at: model.timerNow)
+            let time = overtime ? "+" + timerText(active.overtimeSeconds(at: model.timerNow)) : timerText(active.remaining(at: model.timerNow))
+            let info = NSMenuItem(title: "\(overtime ? "额外专注" : active.phase.title)：\(active.title)  \(time)", action: nil, keyEquivalent: "")
             info.isEnabled = false; menu.addItem(info)
-            add(menu, active.phase == .focus ? "中断本次专注（保留时段）" : "跳过休息", #selector(stopPomodoro), "")
+            if overtime {
+                add(menu, "开始休息并评价", #selector(startPomodoroBreak), "")
+                add(menu, "显示额外专注窗口", #selector(showFocusPrompt), "")
+            } else {
+                add(menu, active.phase == .focus ? "中断本次专注（保留时段）" : "跳过休息", #selector(stopPomodoro), "")
+            }
         } else {
             let heading = NSMenuItem(title: "今日任务 · 选择开始专注", action: nil, keyEquivalent: "")
             heading.isEnabled = false; menu.addItem(heading)
@@ -193,6 +206,8 @@ final class ClotheslinePanel: NSPanel {
         model.startFocus(id, day: model.today)
     }
     @objc private func stopPomodoro() { model.stopTimer() }
+    @objc private func startPomodoroBreak() { model.startBreak() }
+    @objc private func showFocusPrompt() { focusPrompt?.refresh(); focusPrompt?.show() }
     @objc func pomodoroSettings() { showWindow(); model.showingPomodoroSettings = true }
     private func createClothesline() {
         clothesline = ClotheslinePanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -312,6 +327,7 @@ final class ClotheslinePanel: NSPanel {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         commitActiveTextEditing(in: goalEditor)
         commitActiveTextEditing(in: window)
+        commitActiveTextEditing(in: focusPrompt?.window)
         guard model != nil else { return .terminateNow }
         if model.flush() || model.loadFailed { isTerminating = true; return .terminateNow }
         let alert = NSAlert(); alert.messageText = "还有更改未能保存"
