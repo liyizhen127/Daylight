@@ -1,5 +1,13 @@
 # Verification notes
 
+## Version 2.3.0: cultivation companion
+
+All 43 tests pass (24 core and 19 application tests). New coverage exercises the real status item across focus, overtime, break, and idle transitions; verifies that model ticks do not restart its animation timer; checks Reduce Motion, sleep/wake, detachment, and click-through behavior; and compares rendered animation frames against motionless idle frames in both appearances. Existing timer, review, Calendar, and Chinese input-method tests also pass.
+
+Offscreen rendering verified the original figure, incoming energy streaks, flame aura, expanding waves, and task/time spacing at Retina scale. The README animation uses only synthetic task text. An isolated preview app was launched with Calendar disabled; the automation surface exposes the planner window but not the system menu bar, so live menu bar pixel capture was unavailable. Native status item state and interaction wiring are covered by integration tests.
+
+An installed upgrade preserved all existing records, settings, reviews, and the running focus timer unchanged. A fresh Release build and strict ad-hoc signature verification pass. Version 2.3 retains schema 3 and introduces no new stored fields or permissions. The animation draws only its 44-by-24-point view at 20 frames per second during focus; breaks and idle have no animation timer. Reduce Motion uses a still frame.
+
 ## Version 2.2.0: overtime and session reviews
 
 All 40 tests pass (24 core tests and 16 application integration tests). The new flow is covered by deadline/no-auto-break checks, actual overtime duration, exactly-once completion, long-break cadence, midnight attribution, sleep/relaunch recovery, schema 2 migration with an immutable backup, review drafts and edits across restart, Calendar synchronization using the actual end time, movable-window stability, menu actions, and Chinese review composition during break timer updates.

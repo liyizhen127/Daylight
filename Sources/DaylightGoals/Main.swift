@@ -20,6 +20,7 @@ final class ClotheslinePanel: NSPanel {
     var model: AppModel!
     var window: NSWindow!
     var statusItem: NSStatusItem!
+    private(set) var statusCultivator: CultivatorStatusView?
     var timer: Timer?
     var clothesline: ClotheslinePanel!
     var goalEditor: NSWindow?
@@ -119,8 +120,20 @@ final class ClotheslinePanel: NSPanel {
         item.target = target ?? (["undo:", "cut:", "copy:", "paste:", "selectAll:", "performClose:"].contains(action.description) ? nil : self)
         menu.addItem(item)
     }
-    private func setupStatusItem() {
+    func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if let button = statusItem.button {
+            let cultivator = CultivatorStatusView(frame: .zero)
+            cultivator.translatesAutoresizingMaskIntoConstraints = false
+            button.addSubview(cultivator)
+            NSLayoutConstraint.activate([
+                cultivator.leadingAnchor.constraint(equalTo: button.leadingAnchor, constant: 6),
+                cultivator.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+                cultivator.widthAnchor.constraint(equalToConstant: CultivatorArtwork.size.width),
+                cultivator.heightAnchor.constraint(equalToConstant: CultivatorArtwork.size.height)
+            ])
+            statusCultivator = cultivator
+        }
         updateStatusItem()
         statusItem.button?.toolTip = "Daylight · 点击展开挂衣绳，右键打开菜单"
         statusItem.button?.target = self
@@ -129,28 +142,30 @@ final class ClotheslinePanel: NSPanel {
     }
     func updateStatusItem() {
         guard let button = statusItem?.button, let model else { return }
+        let focusing = model.planner.activeTimer?.phase == .focus
+        statusCultivator?.setFocusing(focusing)
+        let cultivation = focusing ? "修仙中，吸收灵气" : "静坐休息"
+        button.title = ""
+        button.imagePosition = .imageOnly
         if let active = model.planner.activeTimer {
             let name = active.phase == .focus ? active.title : active.phase.title
             let overtime = active.isOvertime(at: model.timerNow)
             let time = overtime ? "+" + timerText(active.overtimeSeconds(at: model.timerNow)) : timerText(active.remaining(at: model.timerNow))
-            let key = "\(name)-\(time)-\(button.effectiveAppearance.name.rawValue)"
+            let key = "\(active.phase)-\(name)-\(time)-\(button.effectiveAppearance.name.rawValue)"
             guard key != statusKey else { return }; statusKey = key
-            button.title = ""
-            button.imagePosition = .imageOnly
             button.image = StatusBadge.image(name: name, time: time)
-            button.toolTip = "\(active.title) · \(overtime ? "额外专注" : active.phase.title) \(time)\n左键挂衣绳 · 右键控制番茄钟"
-            button.setAccessibilityLabel("\(active.title) \(overtime ? "额外专注" : "剩余") \(time)")
+            button.toolTip = "\(cultivation) · \(active.title) · \(overtime ? "额外专注" : active.phase.title) \(time)\n左键挂衣绳 · 右键控制番茄钟"
+            button.setAccessibilityLabel("\(cultivation) · \(active.title) \(overtime ? "额外专注" : "剩余") \(time)")
         } else {
             let count = model.planner.completedPomodoros(on: model.today)
-            let key = "idle-\(count)"
+            let key = "idle-\(count)-\(button.effectiveAppearance.name.rawValue)"
             guard statusKey != key else { return }; statusKey = key
-            button.image = TomatoArtwork.menuIcon
-            button.imagePosition = .imageLeft
-            button.title = " \(count)"
-            button.font = .systemFont(ofSize: 14, weight: .semibold)
-            button.toolTip = "今日已完成 \(count) 颗番茄 · 左键挂衣绳 · 右键开始专注"
-            button.setAccessibilityLabel("Daylight 今日已完成 \(count) 颗番茄")
+            button.image = StatusBadge.idleImage(count: count)
+            button.toolTip = "\(cultivation) · 今日已完成 \(count) 颗番茄\n左键挂衣绳 · 右键开始专注"
+            button.setAccessibilityLabel("Daylight \(cultivation) · 今日已完成 \(count) 颗番茄")
         }
+        // Fix the native button's padding so its image and the independent overlay align.
+        if let image = button.image { statusItem.length = image.size.width + 12 }
     }
     @objc private func statusClicked() {
         if NSApp.currentEvent?.type == .rightMouseUp { showStatusMenu() }
@@ -338,5 +353,6 @@ final class ClotheslinePanel: NSPanel {
         if let globalClickMonitor { NSEvent.removeMonitor(globalClickMonitor) }
         if let localClickMonitor { NSEvent.removeMonitor(localClickMonitor) }
         timer?.invalidate()
+        statusCultivator?.stopAnimation()
     }
 }

@@ -32,6 +32,8 @@ Calendar sync is off by default. Enabling it requests full EventKit access so th
 
 There are no account, advertising, analytics, or telemetry endpoints and no third-party network dependencies. The AetherNote help link opens in a browser only when selected. The operating system and selected calendar service handle any Calendar synchronization.
 
+The cultivation companion is original vector artwork rendered locally. Its animation only uses the current focus phase and an in-memory animation clock. It stores no additional personal data and makes no network requests.
+
 ## Repository contents
 
 This repository includes source, tests, build configuration, and documentation. Tests use temporary directories and generic fixtures. Demo tasks are generic learning, reading, and exercise examples and are generated only when both `--data-dir` and `--demo` are explicitly supplied.

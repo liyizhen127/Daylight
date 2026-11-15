@@ -6,7 +6,7 @@
 
 Daylight is a native macOS menu bar app for long-term goals, monthly and weekly plans, daily checklists, and task-based Pomodoro timers. Open the clothesline panel to see your week at a glance, then watch completed sessions collect as smiling tomatoes at the bottom.
 
-**Version 2.2.0** · SwiftUI / AppKit / SpriteKit · No third-party package dependencies
+**Version 2.3.0** · SwiftUI / AppKit / SpriteKit · No third-party package dependencies
 
 > The app is named Daylight, and this README is available in English and Simplified Chinese. The application interface remains in Simplified Chinese, including menus, settings, messages, and reflection prompts. You can write your own tasks in any language.
 
@@ -20,17 +20,20 @@ Daylight is a native macOS menu bar app for long-term goals, monthly and weekly 
 | Task-based Pomodoros | Start a named timer directly from a daily task; track estimated and completed sessions |
 | Overtime and reflection | A movable completion window keeps counting until you start a break; rate the session and write a reflection |
 | Flexible breaks | Configure focus duration, short breaks, long-break frequency, and long-break duration |
+| Cultivation companion | A seated cultivator absorbs golden energy during focus and overtime; rests motionless during breaks and idle time |
 | Menu bar controls | Show today's completed count when idle, or the current activity and remaining time |
 | Monthly harvest | Watch tomatoes fall, collide, and stack; click one to make it bounce |
 | Apple Calendar | Optionally record completed or interrupted focus sessions in a selected calendar |
 | Local storage | Autosave, full JSON backup and restore, and daily or weekly Markdown export |
 | Chinese input support | Preserve input-method composition during autosave and timer updates |
 
+![Focus and overtime animate; break and idle remain still](docs/images/cultivation.gif)
+
 ## Install a release
 
-Download [Daylight v2.2.0 for macOS (Apple Silicon)](https://github.com/liyizhen127/Daylight/releases/download/v2.2.0/Daylight-v2.2.0-macOS-arm64.zip), for **Apple Silicon Macs running macOS 14 or later**. Unzip it, drag `Daylight.app` into Applications, and open it. Intel Macs are not supported by this binary.
+Download [Daylight v2.3.0 for macOS (Apple Silicon)](https://github.com/liyizhen127/Daylight/releases/download/v2.3.0/Daylight-v2.3.0-macOS-arm64.zip), for **Apple Silicon Macs running macOS 14 or later**. Unzip it, drag `Daylight.app` into Applications, and open it. Intel Macs are not supported by this binary.
 
-The app, source archive, and checksums are available on the [v2.2.0 release page](https://github.com/liyizhen127/Daylight/releases/tag/v2.2.0). This build uses ad-hoc signing and is **not notarized by Apple**, so macOS may block first launch pending user approval. See the [release notes](docs/releases/v2.2.0.md) for package contents and checksum verification.
+The app, source archive, and checksums are available on the [v2.3.0 release page](https://github.com/liyizhen127/Daylight/releases/tag/v2.3.0). This build uses ad-hoc signing and is **not notarized by Apple**, so macOS may block first launch pending user approval. See the [release notes](docs/releases/v2.3.0.md) for package contents and checksum verification.
 
 ## Build
 
@@ -53,7 +56,7 @@ DAYLIGHT_BUILD_ROOT="$PWD/build-release" bash scripts/build-app.sh
 
 ## Use
 
-1. Launch Daylight. Left-click its menu bar tomato to open or close the clothesline; right-click to select a task or control a timer.
+1. Launch Daylight. Left-click its menu bar cultivator or tomato to open or close the clothesline; right-click to select a task or control a timer.
 2. Click a goal card or its pencil button to edit it. Completed items remain visible with a strikethrough.
 3. Set an estimated Pomodoro count beside a daily task and start a focus session.
 4. Press `⌘,` to adjust Pomodoro settings or opt into Calendar sync.
@@ -102,7 +105,7 @@ Version 2.2 upgrades data to schema 3 and preserves the original file as `planne
 swift test --disable-sandbox
 ```
 
-The 40-test suite includes AppKit input-method and SpriteKit scene tests. Full tests require a macOS desktop environment with access to system graphics services. See [verification notes](docs/VERIFICATION.md) for coverage and limitations.
+The 43-test suite includes AppKit input-method and SpriteKit scene tests. Full tests require a macOS desktop environment with access to system graphics services. See [verification notes](docs/VERIFICATION.md) for coverage and limitations.
 
 ```text
 .

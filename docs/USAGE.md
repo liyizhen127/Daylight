@@ -80,3 +80,9 @@ swift test --disable-sandbox
 ```
 
 The app is generated at `build/Daylight.app`. Set `DAYLIGHT_BUILD_ROOT` to override the output directory. The local build uses ad-hoc signing. See [verification notes](VERIFICATION.md) for test coverage and platform limits.
+
+## Menu bar cultivation companion
+
+A small, golden, seated cultivator sits to the left of the task/time badge and the idle tomato count. During focus and overtime, bright energy streaks rush inward through a flame-shaped golden aura, with rotating halo arcs and expanding pressure waves. Short breaks, long breaks, and idle time use a motionless pose. Both left-click and right-click pass through to the existing menu bar controls.
+
+The animation runs in a separate 44-by-24-point view at 20 frames per second; it does not refresh the planner or write data. Its animation timer stops during breaks, idle time, system sleep, or when detached. The system Reduce Motion setting uses a still frame, including during focus. No assets are downloaded, and there are no new permissions or data migrations in version 2.3.
