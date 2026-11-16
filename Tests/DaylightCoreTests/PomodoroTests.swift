@@ -80,6 +80,82 @@ final class PomodoroTests: XCTestCase {
         XCTAssertEqual(p.actualPomodoros(taskID: task.id, on: day), 0)
         XCTAssertEqual(p.cycleCompleted, 0)
     }
+    func testLongBreakUsesEveryFourthCompletionWithinEachLocalDay() {
+        var p = planner(); p.pomodoro.longBreakEvery = 4
+        let id = p.record(on: day).tasks[0].id
+        let morning = Calendar.planner.startOfDay(for: day.date()!).addingTimeInterval(9 * 3600)
+        for i in 0..<3 {
+            let begin = morning.addingTimeInterval(Double(i * 120))
+            XCTAssertTrue(p.startFocus(taskID: id, on: day, now: begin))
+            XCTAssertNotNil(p.startBreak(now: begin.addingTimeInterval(60)))
+            XCTAssertEqual(p.activeTimer?.phase, .shortBreak)
+            p.stopTimer(now: begin.addingTimeInterval(61))
+        }
+        let tomorrow = day.adding(1)
+        let nextMorning = Calendar.planner.startOfDay(for: tomorrow.date()!).addingTimeInterval(9 * 3600)
+        for number in 1...8 {
+            let begin = nextMorning.addingTimeInterval(Double(number * 120))
+            // An older task's date must not control the break cadence.
+            XCTAssertTrue(p.startFocus(taskID: id, on: day, now: begin))
+            XCTAssertNotNil(p.startBreak(now: begin.addingTimeInterval(60)))
+            let long = number.isMultiple(of: 4)
+            XCTAssertEqual(p.activeTimer?.phase, long ? .longBreak : .shortBreak, "Today's completion \(number)")
+            XCTAssertEqual(p.activeTimer?.remaining(at: begin.addingTimeInterval(60)), long ? 180 : 60)
+            XCTAssertEqual(p.completedPomodoros(on: tomorrow), number)
+            XCTAssertEqual(p.cycleCompleted, number % 4)
+            p.stopTimer(now: begin.addingTimeInterval(61))
+        }
+        XCTAssertEqual(p.completedPomodoros(on: day), 3)
+        XCTAssertEqual(p.actualPomodoros(taskID: id, on: day), 11)
+    }
+
+    func testOvertimeAcrossMidnightDoesNotCarryPreviousDaysProgress() {
+        var p = planner(); p.pomodoro.longBreakEvery = 4
+        let id = p.record(on: day).tasks[0].id
+        let midnight = Calendar.planner.startOfDay(for: day.adding(1).date()!)
+        for i in 0..<3 {
+            let begin = midnight.addingTimeInterval(Double(-3600 + i * 120))
+            p.startFocus(taskID: id, on: day, now: begin)
+            p.startBreak(now: begin.addingTimeInterval(60))
+            p.stopTimer(now: begin.addingTimeInterval(61))
+        }
+        p.startFocus(taskID: id, on: day, now: midnight.addingTimeInterval(-120))
+        // The planned deadline is yesterday; the actual completion click is today.
+        p.advanceTimer(now: midnight.addingTimeInterval(30))
+        XCTAssertNotNil(p.startBreak(now: midnight.addingTimeInterval(60)))
+        XCTAssertEqual(p.activeTimer?.phase, .shortBreak)
+        XCTAssertEqual(p.completedPomodoros(on: day), 3)
+        XCTAssertEqual(p.completedPomodoros(on: day.adding(1)), 1)
+        XCTAssertEqual(p.sessions.last?.day, day)
+        XCTAssertEqual(p.sessions.last?.overtimeSeconds, 120)
+    }
+
+    func testDailyCadenceSurvivesRestartAndIgnoresLegacyCounterAndInterruptions() throws {
+        var p = planner(); p.pomodoro.longBreakEvery = 4
+        let id = p.record(on: day).tasks[0].id
+        let morning = Calendar.planner.startOfDay(for: day.date()!).addingTimeInterval(9 * 3600)
+        for i in 0..<2 {
+            let begin = morning.addingTimeInterval(Double(i * 120))
+            p.startFocus(taskID: id, on: day, now: begin)
+            p.startBreak(now: begin.addingTimeInterval(60))
+            p.stopTimer(now: begin.addingTimeInterval(61))
+        }
+        p.cycleCompleted = 3 // A stale counter saved by a version that carried progress across days.
+        p = try PlannerDisk.decode(PlannerDisk.encode(p))
+        p.startFocus(taskID: id, on: day, now: morning.addingTimeInterval(300))
+        p.stopTimer(now: morning.addingTimeInterval(310))
+        XCTAssertEqual(p.completedPomodoros(on: day), 2)
+        for number in 3...4 {
+            p = try PlannerDisk.decode(PlannerDisk.encode(p))
+            let begin = morning.addingTimeInterval(Double(number * 120))
+            p.startFocus(taskID: id, on: day, now: begin)
+            p.startBreak(now: begin.addingTimeInterval(60))
+            XCTAssertEqual(p.activeTimer?.phase, number == 4 ? .longBreak : .shortBreak)
+            p.stopTimer(now: begin.addingTimeInterval(61))
+        }
+        XCTAssertEqual(p.sessions.filter { $0.outcome == .interrupted }.count, 1)
+        XCTAssertEqual(p.completedPomodoros(on: day), 4)
+    }
     func testStoppingAtDeadlineCountsCompletionAndSkipsBreak() {
         var p = planner(); let id = p.record(on: day).tasks[0].id
         p.startFocus(taskID: id, on: day, now: start)

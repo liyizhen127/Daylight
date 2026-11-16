@@ -1,5 +1,11 @@
 # Verification notes
 
+## Version 2.3.1: long breaks reset each day
+
+All 46 tests pass (27 core and 19 application tests). Three new regression tests reproduced the former cross-day behavior before the fix. They now verify yesterday's three completions do not trigger today's first long break, today's fourth/eighth completions do, overtime uses the actual completion date across midnight, and relaunches or stale legacy counters do not override saved daily history. Early interruptions remain excluded, and the existing configurable-interval, review, animation, Calendar, and Chinese input tests continue to pass.
+
+Version 2.3.1 retains schema 3 without a data migration. Chinese settings explicitly describe the local-day rule and were verified in the installed app. Upgrade verification preserved all records and settings; the existing break expired at its original deadline. Release build and strict ad-hoc signature verification pass.
+
 ## Version 2.3.0: cultivation companion
 
 All 43 tests pass (24 core and 19 application tests). New coverage exercises the real status item across focus, overtime, break, and idle transitions; verifies that model ticks do not restart its animation timer; checks Reduce Motion, sleep/wake, detachment, and click-through behavior; and compares rendered animation frames against motionless idle frames in both appearances. Existing timer, review, Calendar, and Chinese input-method tests also pass.

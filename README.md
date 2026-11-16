@@ -6,7 +6,7 @@
 
 Daylight is a native macOS menu bar app for long-term goals, monthly and weekly plans, daily checklists, and task-based Pomodoro timers. Open the clothesline panel to see your week at a glance, then watch completed sessions collect as smiling tomatoes at the bottom.
 
-**Version 2.3.0** · SwiftUI / AppKit / SpriteKit · No third-party package dependencies
+**Version 2.3.1** · SwiftUI / AppKit / SpriteKit · No third-party package dependencies
 
 > The app is named Daylight, and this README is available in English and Simplified Chinese. The application interface remains in Simplified Chinese, including menus, settings, messages, and reflection prompts. You can write your own tasks in any language.
 
@@ -19,7 +19,7 @@ Daylight is a native macOS menu bar app for long-term goals, monthly and weekly 
 | Daily reflection | Plan your day and keep a separate evening reflection |
 | Task-based Pomodoros | Start a named timer directly from a daily task; track estimated and completed sessions |
 | Overtime and reflection | A movable completion window keeps counting until you start a break; rate the session and write a reflection |
-| Flexible breaks | Configure focus duration, short breaks, long-break frequency, and long-break duration |
+| Flexible breaks | Configure durations and daily long-break frequency; yesterday's completions do not carry over |
 | Cultivation companion | A seated cultivator absorbs golden energy during focus and overtime; rests motionless during breaks and idle time |
 | Menu bar controls | Show today's completed count when idle, or the current activity and remaining time |
 | Monthly harvest | Watch tomatoes fall, collide, and stack; click one to make it bounce |
@@ -31,9 +31,9 @@ Daylight is a native macOS menu bar app for long-term goals, monthly and weekly 
 
 ## Install a release
 
-Download [Daylight v2.3.0 for macOS (Apple Silicon)](https://github.com/liyizhen127/Daylight/releases/download/v2.3.0/Daylight-v2.3.0-macOS-arm64.zip), for **Apple Silicon Macs running macOS 14 or later**. Unzip it, drag `Daylight.app` into Applications, and open it. Intel Macs are not supported by this binary.
+Download [Daylight v2.3.1 for macOS (Apple Silicon)](https://github.com/liyizhen127/Daylight/releases/download/v2.3.1/Daylight-v2.3.1-macOS-arm64.zip), for **Apple Silicon Macs running macOS 14 or later**. Unzip it, drag `Daylight.app` into Applications, and open it. Intel Macs are not supported by this binary.
 
-The app, source archive, and checksums are available on the [v2.3.0 release page](https://github.com/liyizhen127/Daylight/releases/tag/v2.3.0). This build uses ad-hoc signing and is **not notarized by Apple**, so macOS may block first launch pending user approval. See the [release notes](docs/releases/v2.3.0.md) for package contents and checksum verification.
+The app, source archive, and checksums are available on the [v2.3.1 release page](https://github.com/liyizhen127/Daylight/releases/tag/v2.3.1). This build uses ad-hoc signing and is **not notarized by Apple**, so macOS may block first launch pending user approval. See the [release notes](docs/releases/v2.3.1.md) for package contents and checksum verification.
 
 ## Build
 
@@ -79,6 +79,7 @@ See the [usage guide](docs/USAGE.md) for timer behavior, migration, and backup d
 
 - At the focus deadline, a movable window shows live overtime. Clicking Start Break finalizes exactly one completed Pomodoro, including the overtime. Early interruptions keep the elapsed interval but do not count as completed Pomodoros.
 - Breaks start only when you click Start Break. Rate the finished session (great, okay, or poor) and optionally write a reflection while the break runs. Drafts autosave and can be reopened from recent focus history.
+- Long breaks use only the current local day’s completed sessions: with the default interval of 4, today’s 4th, 8th, and 12th completions start a long break. Progress starts fresh each day; a session finalized after midnight counts toward the new day.
 - Daily and monthly totals use the local completion date. A session still belongs to the task and task date selected when it started.
 - Usually, one displayed tomato represents one completed session. Above 240 sessions, tomatoes are grouped and labeled; the total remains exact.
 - Hiding the panel pauses animation immediately. Each animation runs for approximately 13 seconds; Reduce Motion uses a static arrangement.
@@ -105,7 +106,7 @@ Version 2.2 upgrades data to schema 3 and preserves the original file as `planne
 swift test --disable-sandbox
 ```
 
-The 43-test suite includes AppKit input-method and SpriteKit scene tests. Full tests require a macOS desktop environment with access to system graphics services. See [verification notes](docs/VERIFICATION.md) for coverage and limitations.
+The 46-test suite includes AppKit input-method and SpriteKit scene tests. Full tests require a macOS desktop environment with access to system graphics services. See [verification notes](docs/VERIFICATION.md) for coverage and limitations.
 
 ```text
 .

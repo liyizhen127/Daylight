@@ -16,7 +16,9 @@ Daily planning and reflection remain separate. Completing a Pomodoro does not au
 
 Start focus beside a daily task, or select one of today's tasks from the menu bar. Every daily task is already a named timer target; separate labels are unnecessary.
 
-Defaults are 25 minutes of focus, a 5-minute short break, and a 15-minute long break after every 4 completed sessions. Change these in Pomodoro and Calendar settings (`⌘,`). New settings apply to the next interval without resetting the current one.
+Defaults are 25 minutes of focus, a 5-minute short break, and a 15-minute long break after every 4 completed sessions within the same local day. Change these in Pomodoro and Calendar settings (`⌘,`). New settings apply to the next interval without resetting the current one.
+
+Long-break progress starts fresh each local day. With an interval of 4, today’s 4th, 8th, and 12th completed Pomodoros trigger long breaks. For example, 3 yesterday plus 1 today gives a short break. Counts come from saved completion history, so relaunching the app does not reset today’s progress or import yesterday’s progress. Interrupted sessions do not count. A focus interval that crosses midnight is counted on the date you click Start Break, even if its task or planned deadline belongs to yesterday. An already-running break keeps its original duration across midnight.
 
 During focus, the menu bar shows the task title and remaining time; after the deadline, it shows the same task with a `+MM:SS` overtime counter. During a break, it shows the break type and remaining time. When idle, it shows a monochrome smiling tomato followed by today's completed count. Long titles are shortened; the tooltip retains the full title.
 

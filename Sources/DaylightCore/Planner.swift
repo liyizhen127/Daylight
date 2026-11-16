@@ -133,6 +133,7 @@ public struct Planner: Codable, Equatable, Sendable {
     public var pomodoro = PomodoroSettings()
     public var sessions: [FocusSession] = []
     public var activeTimer: ActiveTimer?
+    // Retained for file compatibility; break decisions use daily session history.
     public var cycleCompleted = 0
     public init() {}
     // Text adapters for legacy exports and integrations. Task identity is authoritative in v2.

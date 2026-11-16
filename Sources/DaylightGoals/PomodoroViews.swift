@@ -54,9 +54,11 @@ struct PomodoroSettingsView: View {
                     VStack(spacing: 14) {
                         duration("专注时长", value: number(\.focusMinutes), range: 1...180, suffix: "分钟")
                         duration("普通休息", value: number(\.shortBreakMinutes), range: 1...60, suffix: "分钟")
-                        duration("每完成", value: number(\.longBreakEvery), range: 1...12, suffix: "颗番茄，进入长休息")
+                        duration("当天每完成", value: number(\.longBreakEvery), range: 1...12, suffix: "颗番茄，进入长休息")
                         duration("长休息", value: number(\.longBreakMinutes), range: 1...120, suffix: "分钟")
                         Text("到时自动弹出额外专注窗口，点击开始休息后结算 1 颗番茄并填写评价。额外专注计入实际时长；提前中断不计完成数。设置用于下一段计时。")
+                            .font(.system(size: 11)).foregroundStyle(Palette.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                        Text("长休息按当天完成数计算，跨天重新累计；跨午夜专注按点击开始休息的日期计入。已开始的休息不受换日影响。")
                             .font(.system(size: 11)).foregroundStyle(Palette.secondary).frame(maxWidth: .infinity, alignment: .leading)
                     }.padding(18).background(.white, in: RoundedRectangle(cornerRadius: 14))
                     VStack(alignment: .leading, spacing: 13) {

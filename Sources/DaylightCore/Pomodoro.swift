@@ -95,15 +95,17 @@ public extension Planner {
     @discardableResult mutating func startBreak(now: Date = Date()) -> UUID? {
         guard let active = activeTimer, active.isOvertime(at: now), !sessions.contains(where: { $0.id == active.id }) else { return nil }
         finishFocus(active, now: now, outcome: .completed)
-        let long = cycleCompleted >= pomodoro.longBreakEvery
-        if long { cycleCompleted = 0 }
+        // Use the actual local completion date, not a counter carried over from yesterday.
+        let long = completedPomodoros(on: Day(now)).isMultiple(of: pomodoro.longBreakEvery)
         activeTimer = ActiveTimer(taskID: active.taskID, day: active.day, title: active.title, phase: long ? .longBreak : .shortBreak,
                                   startedAt: now, seconds: TimeInterval((long ? pomodoro.longBreakMinutes : pomodoro.shortBreakMinutes) * 60))
         return active.id
     }
     private mutating func finishFocus(_ active: ActiveTimer, now: Date, outcome: FocusOutcome) {
         sessions.append(FocusSession(timer: active, endedAt: now, outcome: outcome, settings: pomodoro))
-        if outcome == .completed { cycleCompleted += 1 }
+        if outcome == .completed {
+            cycleCompleted = completedPomodoros(on: Day(now)) % pomodoro.longBreakEvery
+        }
     }
     @discardableResult mutating func stopTimer(now: Date = Date()) -> Bool {
         let transitions = advanceTimer(now: now)
