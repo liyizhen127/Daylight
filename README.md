@@ -6,7 +6,7 @@
 
 Daylight is a native macOS menu bar app for long-term goals, monthly and weekly plans, daily checklists, and task-based Pomodoro timers. Open the clothesline panel to see your week at a glance, then watch completed sessions collect as smiling tomatoes at the bottom.
 
-**Version 2.4.0** · SwiftUI / AppKit / SpriteKit · No third-party package dependencies
+**Version 2.4.1** · SwiftUI / AppKit / SpriteKit · No third-party package dependencies
 
 > The app is named Daylight, and this README is available in English and Simplified Chinese. The application interface remains in Simplified Chinese, including menus, settings, messages, and reflection prompts. You can write your own tasks in any language.
 
@@ -24,7 +24,7 @@ Daylight is a native macOS menu bar app for long-term goals, monthly and weekly 
 | Menu bar controls | Show today's completed count when idle, or the current activity and remaining time |
 | Monthly harvest | Watch tomatoes fall, collide, and stack; click one to make it bounce |
 | Daily goals in Reminders | Sync dated tasks, completion state, and actual/estimated Pomodoros. Calendar on macOS 15+ can display scheduled reminders |
-| Evening reflection | Write the day’s reflection to Calendar at 23:00. Manually sync a selected date or catch up after relaunch |
+| Evening reflection | Use the reflection text as the 23:00 event title. Notes preserve line breaks, and edits update the same event |
 | Apple Calendar | Optionally record completed or interrupted focus sessions in a selected calendar |
 | Local storage | Autosave, full JSON backup and restore, and daily or weekly Markdown export |
 | Chinese input support | Preserve input-method composition during autosave and timer updates |
@@ -33,9 +33,9 @@ Daylight is a native macOS menu bar app for long-term goals, monthly and weekly 
 
 ## Install a release
 
-Download [Daylight v2.4.0 for macOS (Apple Silicon)](https://github.com/liyizhen127/Daylight/releases/download/v2.4.0/Daylight-v2.4.0-macOS-arm64.zip), for **Apple Silicon Macs running macOS 14 or later**. Unzip it, drag `Daylight.app` into Applications, and open it. Intel Macs are not supported by this binary.
+Download [Daylight v2.4.1 for macOS (Apple Silicon)](https://github.com/liyizhen127/Daylight/releases/download/v2.4.1/Daylight-v2.4.1-macOS-arm64.zip), for **Apple Silicon Macs running macOS 14 or later**. Unzip it, drag `Daylight.app` into Applications, and open it. Intel Macs are not supported by this binary.
 
-The app, source archive, and checksums are available on the [v2.4.0 release page](https://github.com/liyizhen127/Daylight/releases/tag/v2.4.0). This build uses ad-hoc signing and is **not notarized by Apple**, so macOS may block first launch pending user approval. See the [release notes](docs/releases/v2.4.0.md) for package contents and checksum verification.
+The app, source archive, and checksums are available on the [v2.4.1 release page](https://github.com/liyizhen127/Daylight/releases/tag/v2.4.1). This build uses ad-hoc signing and is **not notarized by Apple**, so macOS may block first launch pending user approval. See the [release notes](docs/releases/v2.4.1.md) for package contents and checksum verification.
 
 ## Build
 

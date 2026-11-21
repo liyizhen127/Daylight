@@ -8,12 +8,13 @@
     <key>CFBundleIdentifier</key><string>local.daylight.goals</string>
     <key>CFBundleName</key><string>Daylight</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>2.4.0</string>
-    <key>CFBundleVersion</key><string>10</string>
+    <key>CFBundleShortVersionString</key><string>2.4.1</string>
+    <key>CFBundleVersion</key><string>11</string>
     <key>LSUIElement</key><true/>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>NSCalendarsFullAccessUsageDescription</key><string>按你的同步设置写入专注时段或晚上十一点的每日反思，并更新对应日程。</string>
     <key>NSRemindersFullAccessUsageDescription</key><string>将每日目标、预估与实际番茄数、完成状态写入所选提醒事项清单，并更新同一条提醒。</string>
+    <key>NSRemindersUsageDescription</key><string>读取可选清单，将每日目标同步到你选择的提醒事项清单。</string>
     <key>NSCalendarsUsageDescription</key><string>将番茄钟专注时段同步到你选择的苹果日历。</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>

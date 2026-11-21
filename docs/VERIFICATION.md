@@ -1,5 +1,9 @@
 # Verification notes
 
+## Version 2.4.1
+
+All 53 tests passed (27 core and 26 application tests). Coverage includes upgrading a stored reflection receipt, preserving multiline notes, updating the same event after edits, clearing a whitespace-only reflection, and retrying list discovery after a permission or availability change. An installed build also completed reminder writes and updated an existing reflection under its original event identifier.
+
 ## Version 2.4.0
 
 51 tests passed (27 core and 24 application tests). A simulated Apple store covered daily task creation, updates, completion counts, removals, manual historical sync, a lost write acknowledgement, permission denial, the 23:00 boundary, and catch-up after relaunch. Live account delivery depends on macOS authorization and the chosen provider.

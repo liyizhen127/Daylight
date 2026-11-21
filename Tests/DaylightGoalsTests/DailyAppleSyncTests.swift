@@ -7,20 +7,26 @@ import DaylightCore
     var writes = 0
     var failAfterWrite = false
     var denied: Set<DailyChannel> = []
+    var listing: DailyDestinations?
+    var refreshes = 0
+    var lastKnownID: String?
     func authorize(_ channel: DailyChannel) async throws {
         if denied.contains(channel) { throw DailyAppleError.access(channel) }
     }
-    func destinations(_ channel: DailyChannel) -> [CalendarOption] { [CalendarOption(id: channel.rawValue, title: "测试")] }
-    func defaultID(_ channel: DailyChannel) -> String? { channel.rawValue }
+    func destinations(_ channel: DailyChannel, refresh: Bool) -> DailyDestinations {
+        if refresh { refreshes += 1 }
+        return listing ?? DailyDestinations(visibleCount: 1, writable: [CalendarOption(id: channel.rawValue, title: "测试")], defaultID: channel.rawValue)
+    }
     func beginPass() {}
     func reconcile(_ item: DailyAppleItem?, key: String, day: Day, channel: DailyChannel,
                    destination: String, knownID: String?) async throws -> String? {
         guard !denied.contains(channel) else { throw DailyAppleError.access(channel) }
         XCTAssertEqual(destination, channel.rawValue)
+        lastKnownID = knownID
         items[key] = item
         writes += 1
         if failAfterWrite { throw DailyAppleError.readFailed }
-        return item == nil ? nil : key
+        return item == nil ? nil : (knownID ?? key)
     }
 }
 
@@ -87,16 +93,67 @@ import DaylightCore
         model!.tick(now: eleven.addingTimeInterval(9 * 3600))
         await settle(model!)
         XCTAssertEqual(gateway.items[day.rawValue]?.start, eleven)
+        XCTAssertEqual(gateway.items[day.rawValue]?.title, "今天读完一章")
         XCTAssertEqual(gateway.items[day.rawValue]?.notes, "今天读完一章")
-        model!.dailyBinding(.actual, day: day).wrappedValue = "补记：明天继续"
+        let revised = "  补记：明天继续\n\n先复习第一章  "
+        model!.dailyBinding(.actual, day: day).wrappedValue = revised
         model!.flush()
         await settle(model!)
         XCTAssertEqual(gateway.items.count, 1)
-        XCTAssertEqual(gateway.items[day.rawValue]?.notes, "补记：明天继续")
-        model!.dailyBinding(.actual, day: day).wrappedValue = ""
+        XCTAssertEqual(gateway.items[day.rawValue]?.title, "补记：明天继续 先复习第一章")
+        XCTAssertEqual(gateway.items[day.rawValue]?.notes, revised)
+        XCTAssertEqual(gateway.lastKnownID, day.rawValue)
+        model!.dailyBinding(.actual, day: day).wrappedValue = " \n "
         model!.flush()
         await settle(model!)
         XCTAssertTrue(gateway.items.isEmpty)
+    }
+
+    func testOldReflectionReceiptUpdatesExistingEventWithoutEditingPlanner() async throws {
+        let dir = directory(); defer { try? FileManager.default.removeItem(at: dir) }
+        let gateway = DailyTestGateway()
+        var model: AppModel? = try AppModel(directory: dir, dailyGateway: gateway)
+        model!.dailyBinding(.actual, day: day).wrappedValue = "重新梳理了计划"
+        XCTAssertTrue(model!.flush())
+        model = nil
+        let receipt = ["day": day.rawValue, "remoteID": "previous-event", "digest": "previous-title-digest"]
+        let route: [String: Any] = ["since": day.rawValue, "destination": "reflections", "earlierDays": [],
+                                    "receipts": [day.rawValue: receipt]]
+        try JSONSerialization.data(withJSONObject: ["reflections": route])
+            .write(to: dir.appendingPathComponent("daily-apple-sync.json"))
+        model = try AppModel(directory: dir, dailyGateway: gateway)
+        model!.dailyApple.clock = { self.morning }
+        model!.tick(now: morning)
+        await settle(model!)
+        XCTAssertEqual(gateway.lastKnownID, "previous-event")
+        XCTAssertEqual(gateway.items[day.rawValue]?.title, "重新梳理了计划")
+        model!.tick(now: morning.addingTimeInterval(60))
+        await settle(model!)
+        XCTAssertEqual(gateway.writes, 1)
+    }
+
+    func testReminderPickerDistinguishesPermissionEmptyAndReadOnlyAndCanRetry() async throws {
+        let dir = directory(); defer { try? FileManager.default.removeItem(at: dir) }
+        let gateway = DailyTestGateway()
+        let model = try AppModel(directory: dir, dailyGateway: gateway)
+        let sync = model.dailyApple
+        gateway.denied.insert(.reminders)
+        _ = await sync.requestDestinations(.reminders)
+        XCTAssertEqual(gateway.refreshes, 0)
+        XCTAssertEqual(sync.messages[.reminders], DailyAppleError.access(.reminders).errorDescription)
+        gateway.denied.remove(.reminders)
+        gateway.listing = DailyDestinations(visibleCount: 0, writable: [], defaultID: nil)
+        _ = await sync.requestDestinations(.reminders)
+        XCTAssertEqual(sync.messages[.reminders], DailyAppleError.noDestinations(.reminders).errorDescription)
+        gateway.listing = DailyDestinations(visibleCount: 2, writable: [], defaultID: nil)
+        _ = await sync.requestDestinations(.reminders)
+        XCTAssertEqual(sync.messages[.reminders], DailyAppleError.allReadOnly(.reminders).errorDescription)
+        gateway.listing = nil
+        let options = await sync.requestDestinations(.reminders)
+        XCTAssertEqual(options?.writable.map(\.id), ["reminders"])
+        XCTAssertEqual(gateway.refreshes, 3)
+        XCTAssertNil(sync.messages[.reminders])
+        XCTAssertFalse(sync.enabled(.reminders))
     }
 
     func testManualSyncScopesHistoricalDaysAndRecreatesMissingItems() async throws {
@@ -137,7 +194,7 @@ import DaylightCore
         model.dailyApple.clock = { now }
         gateway.denied.insert(.reminders)
         let choices = await model.dailyApple.requestDestinations(.reminders)
-        XCTAssertTrue(choices.isEmpty)
+        XCTAssertNil(choices)
         XCTAssertFalse(model.dailyApple.enabled(.reminders))
         model.dailyBinding(.actual, day: day).wrappedValue = "今天的反思"
         model.flush()

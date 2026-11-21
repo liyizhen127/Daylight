@@ -36,7 +36,7 @@ private struct DailyDestinationPicker: View {
                 .font(.system(size: 13, weight: .semibold))
             Text(channel == .reminders
                  ? "按目标日期创建提醒，标题中的 🍅 表示实际 / 预估。macOS 15 起，可在日历侧栏勾选「计划的提醒事项」。"
-                 : "每天 23:00 将反思写入当日 23:00–23:15 的日程。稍后补写或修改时同步更新。")
+                 : "每天 23:00 用反思正文作为当日 23:00–23:15 的日程标题，备注保留原文和换行。修改后会更新同一条日程。")
                 .font(.caption).foregroundStyle(.secondary)
             if sync.enabled(channel) {
                 HStack {
@@ -48,8 +48,9 @@ private struct DailyDestinationPicker: View {
                 Button(requesting ? "正在读取…" : "选择\(channel.destinationLabel)…") {
                     requesting = true
                     Task {
-                        choices = await sync.requestDestinations(channel)
-                        let preferred = sync.destination(channel) ?? sync.defaultID(channel)
+                        let result = await sync.requestDestinations(channel)
+                        choices = result?.writable ?? []
+                        let preferred = sync.destination(channel) ?? result?.defaultID
                         selection = choices.first { $0.id == preferred }?.id ?? choices.first?.id ?? ""
                         requesting = false
                     }

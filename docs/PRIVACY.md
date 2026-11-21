@@ -32,7 +32,7 @@ Calendar sync is off by default. Enabling it requests full EventKit access so th
 
 ## Daily plan sync
 
-Daily goals and evening reflections have separate opt-in destinations. Reminders permission lets Daylight write task titles, dates, completion state, and both Pomodoro counts to the selected list. Calendar permission lets it write the daily reflection text in an event at 23:00. These records follow the sharing and cloud settings of the selected list or calendar. The review of an individual Pomodoro stays in Daylight.
+Daily goals and evening reflections have separate opt-in destinations. Reminders permission lets Daylight write task titles, dates, completion state, and both Pomodoro counts to the selected list. Calendar permission lets it write the daily reflection text in both the title and notes of an event at 23:00. These records follow the sharing and cloud settings of the selected list or calendar. The review of an individual Pomodoro stays in Daylight.
 
 Daylight uses identifiers and its own URL markers for updates and removals. When a reminder identifier is missing or changes, EventKit supplies reminders for marker matching. Device-local sync state is excluded from portable planner backups and public release files.
 

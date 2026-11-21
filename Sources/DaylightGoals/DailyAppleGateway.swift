@@ -25,31 +25,51 @@ struct DailyAppleItem: Codable, Equatable {
     }
 
     static func reflection(_ text: String, day: Day) -> Self? {
+        let title = text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
         let calendar = Calendar.planner
-        guard let date = day.date(calendar: calendar),
+        guard !title.isEmpty, let date = day.date(calendar: calendar),
               let start = calendar.date(bySettingHour: 23, minute: 0, second: 0, of: date) else { return nil }
-        return Self(key: day.rawValue, day: day, title: "每日反思", notes: text, start: start)
+        return Self(key: day.rawValue, day: day, title: title, notes: text, start: start)
     }
+}
+
+struct DailyDestinations {
+    let visibleCount: Int
+    let writable: [CalendarOption]
+    let defaultID: String?
 }
 
 @MainActor protocol DailyAppleGateway {
     func authorize(_ channel: DailyChannel) async throws
-    func destinations(_ channel: DailyChannel) -> [CalendarOption]
-    func defaultID(_ channel: DailyChannel) -> String?
+    func destinations(_ channel: DailyChannel, refresh: Bool) -> DailyDestinations
     func reconcile(_ item: DailyAppleItem?, key: String, day: Day, channel: DailyChannel,
                    destination: String, knownID: String?) async throws -> String?
     func beginPass()
 }
 
 enum DailyAppleError: LocalizedError {
-    case access(DailyChannel), unavailable(DailyChannel), readFailed
+    case access(DailyChannel), restricted(DailyChannel), noDestinations(DailyChannel), allReadOnly(DailyChannel)
+    case missingDestination(DailyChannel), readOnly(DailyChannel), readFailed
 
     var errorDescription: String? {
         switch self {
         case .access(let channel):
             return "请在系统设置的「隐私与安全性」中允许 Daylight 访问\(channel == .reminders ? "提醒事项" : "日历")。"
-        case .unavailable(let channel):
-            return "所选\(channel.destinationLabel)不可写，请重新选择。"
+        case .restricted(let channel):
+            return "系统限制了对\(channel.destinationLabel)的访问，请检查此 Mac 的访问限制。"
+        case .noDestinations(.reminders):
+            return "系统没有返回提醒事项清单。请在「提醒事项」中确认有一个可以添加提醒的普通清单，然后重试。"
+        case .noDestinations(.reflections):
+            return "系统没有返回日历。请在「日历」中确认有一个可以添加日程的日历，然后重试。"
+        case .allReadOnly(let channel):
+            return "目前可见的\(channel.destinationLabel)均为只读。请创建可编辑的\(channel.destinationLabel)，或向共享者申请编辑权限，然后重试。"
+        case .missingDestination(let channel):
+            return "找不到之前选择的\(channel.destinationLabel)。请确认账户已启用，或关闭同步后重新选择。"
+        case .readOnly(let channel):
+            return "之前选择的\(channel.destinationLabel)目前为只读。请检查编辑权限，或关闭同步后重新选择。"
         case .readFailed:
             return "未能读取苹果提醒事项，请稍后重试。"
         }
@@ -61,7 +81,11 @@ enum DailyAppleError: LocalizedError {
     private var remindersByMarker: [URL: EKReminder]?
 
     func authorize(_ channel: DailyChannel) async throws {
-        guard EKEventStore.authorizationStatus(for: channel.entity) != .fullAccess else { return }
+        switch EKEventStore.authorizationStatus(for: channel.entity) {
+        case .fullAccess: return
+        case .restricted: throw DailyAppleError.restricted(channel)
+        default: break
+        }
         let granted: Bool
         switch channel {
         case .reminders: granted = try await store.requestFullAccessToReminders()
@@ -70,17 +94,32 @@ enum DailyAppleError: LocalizedError {
         guard granted else { throw DailyAppleError.access(channel) }
     }
 
-    func destinations(_ channel: DailyChannel) -> [CalendarOption] {
-        guard EKEventStore.authorizationStatus(for: channel.entity) == .fullAccess else { return [] }
-        return store.calendars(for: channel.entity).filter(\.allowsContentModifications).map {
-            CalendarOption(id: $0.calendarIdentifier, title: "\($0.title) · \($0.source.title)")
-        }.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+    private func defaultCalendar(_ channel: DailyChannel) -> EKCalendar? {
+        channel == .reminders ? store.defaultCalendarForNewReminders() : store.defaultCalendarForNewEvents
     }
 
-    func defaultID(_ channel: DailyChannel) -> String? {
-        guard EKEventStore.authorizationStatus(for: channel.entity) == .fullAccess else { return nil }
-        let calendar = channel == .reminders ? store.defaultCalendarForNewReminders() : store.defaultCalendarForNewEvents
-        return calendar?.calendarIdentifier
+    private func calendars(_ channel: DailyChannel, including preferred: EKCalendar?) -> [EKCalendar] {
+        var calendars = store.calendars(for: channel.entity)
+        if let preferred, !calendars.contains(where: { $0.calendarIdentifier == preferred.calendarIdentifier }) {
+            calendars.append(preferred)
+        }
+        return calendars
+    }
+
+    func destinations(_ channel: DailyChannel, refresh: Bool) -> DailyDestinations {
+        // On explicit selection, EventKit has just granted access on this store.
+        // Rechecking the static status here can discard a successful grant.
+        if refresh {
+            store.refreshSourcesIfNecessary()
+        } else if EKEventStore.authorizationStatus(for: channel.entity) != .fullAccess {
+            return DailyDestinations(visibleCount: 0, writable: [], defaultID: nil)
+        }
+        let preferred = defaultCalendar(channel)
+        let calendars = calendars(channel, including: preferred)
+        let writable = calendars.filter(\.allowsContentModifications).map {
+            CalendarOption(id: $0.calendarIdentifier, title: "\($0.title) · \($0.source.title)")
+        }.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        return DailyDestinations(visibleCount: calendars.count, writable: writable, defaultID: preferred?.calendarIdentifier)
     }
 
     func beginPass() { remindersByMarker = nil }
@@ -104,16 +143,18 @@ enum DailyAppleError: LocalizedError {
 
     func reconcile(_ item: DailyAppleItem?, key: String, day: Day, channel: DailyChannel,
                    destination: String, knownID: String?) async throws -> String? {
-        guard EKEventStore.authorizationStatus(for: channel.entity) == .fullAccess else { throw DailyAppleError.access(channel) }
+        try await authorize(channel)
         guard let marker = URL(string: "daylight-daily://\(channel.rawValue)/\(key)"), let date = day.date() else {
             throw PlannerError.invalidData
         }
-        let target = store.calendar(withIdentifier: destination)
+        var target: EKCalendar?
         if item != nil {
-            let type: EKEntityMask = channel == .reminders ? .reminder : .event
-            guard let target, target.allowsContentModifications, target.allowedEntityTypes.contains(type) else {
-                throw DailyAppleError.unavailable(channel)
+            let available = calendars(channel, including: defaultCalendar(channel))
+            guard let match = available.first(where: { $0.calendarIdentifier == destination }) else {
+                throw DailyAppleError.missingDestination(channel)
             }
+            guard match.allowsContentModifications else { throw DailyAppleError.readOnly(channel) }
+            target = match
         }
         switch channel {
         case .reminders:

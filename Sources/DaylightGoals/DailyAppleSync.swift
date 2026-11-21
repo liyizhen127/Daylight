@@ -43,19 +43,19 @@ private struct DailyRoute: Codable {
 
     func enabled(_ channel: DailyChannel) -> Bool { routes[channel.rawValue]?.since != nil }
     func destination(_ channel: DailyChannel) -> String? { routes[channel.rawValue]?.destination }
-    func options(_ channel: DailyChannel) -> [CalendarOption] { gateway.destinations(channel) }
-    func defaultID(_ channel: DailyChannel) -> String? { gateway.defaultID(channel) }
+    func options(_ channel: DailyChannel) -> [CalendarOption] { gateway.destinations(channel, refresh: false).writable }
 
-    func requestDestinations(_ channel: DailyChannel) async -> [CalendarOption] {
+    func requestDestinations(_ channel: DailyChannel) async -> DailyDestinations? {
         do {
             try await gateway.authorize(channel)
-            let options = gateway.destinations(channel)
-            guard !options.isEmpty else { throw DailyAppleError.unavailable(channel) }
+            let options = gateway.destinations(channel, refresh: true)
+            guard options.visibleCount > 0 else { throw DailyAppleError.noDestinations(channel) }
+            guard !options.writable.isEmpty else { throw DailyAppleError.allReadOnly(channel) }
             messages[channel] = nil
             return options
         } catch {
             messages[channel] = error.localizedDescription
-            return []
+            return nil
         }
     }
 
@@ -161,8 +161,7 @@ private struct DailyRoute: Codable {
                     desired[item.key] = item
                 }
             case .reflections:
-                if !record.reflection.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                   let item = DailyAppleItem.reflection(record.reflection, day: day), let start = item.start {
+                if let item = DailyAppleItem.reflection(record.reflection, day: day), let start = item.start {
                     if start > now && !manual.contains(day) && route.receipts[item.key] == nil { continue }
                     desired[item.key] = item
                 }
