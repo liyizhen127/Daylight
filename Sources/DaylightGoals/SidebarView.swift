@@ -159,7 +159,7 @@ struct HelpView: View {
                 Image(systemName: "sun.horizon").font(.system(size: 31, weight: .light)).foregroundStyle(Palette.green)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Daylight").font(.system(size: 22, weight: .semibold))
-                    Text("每一天，都有方向。  v2.3.1").font(.system(size: 12)).foregroundStyle(Palette.secondary)
+                    Text("每一天，都有方向。  v2.4.0").font(.system(size: 12)).foregroundStyle(Palette.secondary)
                 }
                 Spacer()
             }

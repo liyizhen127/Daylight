@@ -23,6 +23,7 @@ import DaylightCore
     @Published var calendarMessage: String?
     @Published var calendarOptions: [CalendarOption] = []
     @Published var requestingCalendar = false
+    let dailyApple: DailyAppleSync
     let calendarGateway: CalendarGateway
     private var lastSyncAttempt = Date.distantPast
     var onTimerChange: (() -> Void)?
@@ -31,9 +32,14 @@ import DaylightCore
     private var pendingSave: DispatchWorkItem?
     private var dirty = false
 
-    init(directory: URL, demo: Bool = false, calendarGateway: CalendarGateway? = nil) throws {
+    init(directory: URL, demo: Bool = false, calendarGateway: CalendarGateway? = nil, dailyGateway: DailyAppleGateway? = nil) throws {
         self.calendarGateway = calendarGateway ?? EventKitCalendarGateway()
         disk = try PlannerDisk(directory: directory)
+        dailyApple = DailyAppleSync(directory: directory, gateway: dailyGateway ?? EventKitDailyGateway())
+        dailyApple.savedPlanner = { [weak self] in
+            guard let self, !self.loadFailed, !self.dirty else { return nil }
+            return self.planner
+        }
         do {
             planner = try disk.load()
             reviewSessionID = planner.sessions.last { $0.review != nil && $0.review?.submittedAt == nil }?.id
@@ -63,6 +69,7 @@ import DaylightCore
             let record = self.planner.record(on: day)
             guard (field == .expected ? record.expected : record.actual) != text else { return }
             self.planner.setDaily(field, on: day, text: text)
+            self.dailyApple.edited(day, channel: field == .actual ? .reflections : .reminders)
             self.scheduleSave()
         })
     }
@@ -76,6 +83,7 @@ import DaylightCore
         var tasks = planner.tasks(scope, on: day)
         guard let i = tasks.firstIndex(where: { $0.id == id }) else { return }
         let old = tasks[i]; change(&tasks[i]); guard tasks[i] != old else { return }
+        if scope == nil { dailyApple.edited(day, channel: .reminders) }
         planner.setTasks(tasks, scope: scope, on: day)
         if scope == nil, planner.activeTimer?.taskID == id, planner.activeTimer?.day == day, planner.activeTimer?.phase == .focus, !tasks[i].title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             planner.activeTimer?.title = tasks[i].title
@@ -94,12 +102,14 @@ import DaylightCore
         guard !loadFailed else { return }
         let added = GoalTask.parse(text)
         guard !added.isEmpty else { return }
+        if scope == nil { dailyApple.edited(day, channel: .reminders) }
         planner.setTasks(planner.tasks(scope, on: day) + added, scope: scope, on: day)
         scheduleSave()
     }
     func removeTask(_ id: UUID, scope: GoalScope?, day: Day) {
         guard !loadFailed else { return }
         commitActiveTextEditing()
+        if scope == nil { dailyApple.edited(day, channel: .reminders) }
         planner.setTasks(planner.tasks(scope, on: day).filter { $0.id != id }, scope: scope, on: day)
         scheduleSave()
     }
@@ -117,7 +127,10 @@ import DaylightCore
         let wasFocus = planner.activeTimer?.phase == .focus
         let finishingID = planner.activeTimer?.id
         guard planner.stopTimer(now: now) else { return }
-        if let id = finishingID, planner.sessions.contains(where: { $0.id == id && $0.outcome == .completed }) { reviewSessionID = id }
+        if let id = finishingID, let session = session(id), session.outcome == .completed {
+            reviewSessionID = id
+            dailyApple.edited(session.day, channel: .reminders)
+        }
         timerNow = now
         timerMessage = wasFocus ? "本次专注已结束，实际时段已记录。" : "休息已结束，可以选择下一项任务。"
         scheduleSave(); if flush() { syncCalendar() }; onTimerChange?()
@@ -126,6 +139,7 @@ import DaylightCore
         guard !loadFailed else { return }
         commitActiveTextEditing()
         guard let id = planner.startBreak(now: now) else { return }
+        if let session = session(id) { dailyApple.edited(session.day, channel: .reminders) }
         timerNow = now; reviewSessionID = id
         timerMessage = "专注已记录，休息已开始。可以写下这颗番茄的评价。"
         scheduleSave(); if flush() { syncCalendar(now: now) }; onTimerChange?()
@@ -169,6 +183,7 @@ import DaylightCore
         refreshClock()
         if planner.activeTimer != nil { timerNow = now }
         guard !loadFailed else { return }
+        dailyApple.tick(now: now)
         let transitions = planner.advanceTimer(now: now)
         if !transitions.isEmpty {
             timerMessage = "休息结束，准备好后开始下一颗番茄。"
@@ -240,6 +255,7 @@ import DaylightCore
         do {
             try disk.save(planner)
             dirty = false
+            dailyApple.saved()
             if saveError != nil { saveError = nil }
             if saveStatus != "所有更改已保存" { saveStatus = "所有更改已保存" }
             return true
@@ -248,6 +264,10 @@ import DaylightCore
             saveStatus = "尚未保存"
             return false
         }
+    }
+    func syncSelectedDay() {
+        commitActiveTextEditing()
+        if flush() { dailyApple.manual(selectedDay) }
     }
     func select(_ day: Day) {
         guard day.date() != nil else { return }
@@ -318,6 +338,7 @@ import DaylightCore
             pendingSave?.cancel(); pendingSave = nil
             var restored = incoming
             restored.activeTimer = nil // A backup never resumes a historical running timer.
+            try dailyApple.resetForRestore()
             planner = try disk.restore(PlannerDisk.encode(restored))
             reviewSessionID = planner.sessions.last { $0.review != nil && $0.review?.submittedAt == nil }?.id
             onTimerChange?()

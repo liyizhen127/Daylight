@@ -84,6 +84,8 @@ struct PomodoroSettingsView: View {
                         }
                         if let message = model.calendarMessage { Text(message).font(.system(size: 11)).foregroundStyle(.red).textSelection(.enabled) }
                     }.padding(18).background(.white, in: RoundedRectangle(cornerRadius: 14))
+                    DailyAppleSettings(sync: model.dailyApple, day: model.selectedDay, syncDay: model.syncSelectedDay)
+                        .disabled(model.loadFailed)
                     VStack(alignment: .leading, spacing: 10) {
                         Text("最近专注记录").font(.system(size: 13, weight: .semibold))
                         if model.planner.sessions.isEmpty { Text("完成或中断一次专注后，会显示在这里。").font(.system(size: 11)).foregroundStyle(Palette.secondary) }

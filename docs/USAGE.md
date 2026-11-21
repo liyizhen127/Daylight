@@ -34,6 +34,16 @@ Timers use wall-clock deadlines. Time continues to pass while the computer sleep
 
 A session finalized after midnight contributes to that day's menu bar count while remaining linked to its original task date. The month of the actual finish click determines its harvest month.
 
+## Daily goals in Reminders and reflections in Calendar
+
+In the planner, press Command-comma and scroll to **每日计划同步**. Choose a writable reminder list for daily goals and a calendar for daily reflections. Grant the corresponding macOS permission and enable each destination you want. These controls work independently of the Pomodoro event switch.
+
+- Each daily goal becomes an all-day reminder due on its task date. Its title includes actual/estimated Pomodoros and its notes label both counts. Editing, checking, deleting a task, or completing a focus session in Daylight updates its reminder. A stable task identity distinguishes identically named tasks.
+- On macOS 15 and later, enable **Scheduled Reminders** in the Calendar sidebar to see dated reminders in the all-day row. Availability can depend on the reminder account. [Apple’s guide](https://support.apple.com/guide/reminders/remn2ff3b312/mac)
+- At 23:00 local time, a nonempty daily reflection becomes the notes of one “每日反思” event, scheduled for 23:00–23:15 on that date. The app catches up after sleep or relaunch and applies subsequent edits. Clearing a synced reflection removes its linked event.
+- Automatic sync starts with the local date you enable the feature and includes future dates. Editing older dates also enrolls them for the feature you edited. To backfill an earlier date, select it in the planner and click **同步这一天**. Manual sync can also create the evening event before 23:00.
+- Daylight sends changes to Apple. Repeated sync checks its own records by identifier and URL. Turning a channel off pauses its updates. Choosing a different destination on re-enabling moves existing linked entries. Restoring a planner backup requires choosing destinations again on this Mac.
+
 ## Monthly harvest
 
 The clothesline's bottom panel shows completed sessions for the current calendar month, determined by their local end time. Interrupted sessions are excluded. Navigating to a different week does not change the current-month harvest.

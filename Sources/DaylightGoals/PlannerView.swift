@@ -36,7 +36,7 @@ struct PlannerView: View {
                         }
                         HStack(spacing: 5) {
                             Image(systemName: "lock.shield").font(.system(size: 10))
-                            Text("目标保存在本机 · 可选同步专注时段到日历")
+                            Text("计划保存在本机 · 可选同步到提醒事项和日历")
                             Spacer()
                             Text("慢慢来，日子会留下答案。")
                         }.font(.system(size: 10)).foregroundStyle(Palette.secondary)
@@ -96,6 +96,13 @@ struct PlannerView: View {
                     .font(.system(size: 12)).foregroundStyle(Palette.secondary)
             }
             Spacer(minLength: 10)
+            if !model.isReview {
+                Button {
+                    if DailyChannel.allCases.contains(where: model.dailyApple.enabled) { model.syncSelectedDay() }
+                    else { commitActiveTextEditing(); model.showingPomodoroSettings = true }
+                } label: { Label("同步这一天", systemImage: "arrow.triangle.2.circlepath") }
+                .buttonStyle(QuietButton()).help("同步所选日期的日目标与每日反思").disabled(model.loadFailed)
+            }
             HStack(spacing: 0) {
                 Button { model.moveWeek(-1) } label: { Image(systemName: "chevron.left").frame(width: 28, height: 30) }.help("上一周 · ⌘[")
                 Button("回到今天") { model.goToday() }.padding(.horizontal, 7).help("回到今天 · ⌘T")

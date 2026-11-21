@@ -6,7 +6,7 @@
 
 Daylight 是一款原生 macOS 状态栏应用，将长期方向、月计划、周计划、每日任务与番茄钟放在一起。点开菜单栏里的笑脸番茄，就能看到一周的目标挂衣绳；每完成一次专注，底部便多一份番茄收获。
 
-当前版本 **2.3.1** · SwiftUI / AppKit / SpriteKit · 无第三方包依赖
+当前版本 **2.4.0** · SwiftUI / AppKit / SpriteKit · 无第三方包依赖
 
 > 应用名称为 Daylight，README 提供中英两个版本。应用界面仍为简体中文，包括菜单、设置、提示和反思引导；你可以使用任何语言填写任务。
 
@@ -23,6 +23,8 @@ Daylight 是一款原生 macOS 状态栏应用，将长期方向、月计划、�
 | 专注修仙 | 状态栏左侧的盘坐小人在专注与额外专注时吸收金色灵气；休息、空闲时静止 |
 | 状态栏 | 空闲显示笑脸番茄与今日完成数；专注、休息时显示名称及倒计时 |
 | 本月收获 | 橙色笑脸番茄按重力下落、碰撞与堆叠，点击可弹起 |
+| 提醒事项 | 日目标按日期写入所选清单，显示完成状态、实际 / 预估番茄数，支持自动和手动同步 |
+| 每晚反思日程 | 23:00 同步当天的反思，补写后更新同一条日程 |
 | 苹果日历 | 可选将完成或中断的专注按实际起止时间写入指定日历 |
 | 本地记录 | 自动保存、完整 JSON 备份与恢复、每日与每周 Markdown 导出 |
 | 中文输入 | 使用原生文本编辑器保护输入法组词，避免保存或计时刷新覆盖候选文字 |
@@ -31,9 +33,9 @@ Daylight 是一款原生 macOS 状态栏应用，将长期方向、月计划、�
 
 ## 安装 Release 版本
 
-下载 [Daylight v2.3.1 macOS 安装包（Apple Silicon）](https://github.com/liyizhen127/Daylight/releases/download/v2.3.1/Daylight-v2.3.1-macOS-arm64.zip)，适用于 **macOS 14 或更新版本的 Apple Silicon（M 系列）Mac**。解压后将 `Daylight.app` 拖入“应用程序”并打开。此二进制包不支持 Intel Mac。
+下载 [Daylight v2.4.0 macOS 安装包（Apple Silicon）](https://github.com/liyizhen127/Daylight/releases/download/v2.4.0/Daylight-v2.4.0-macOS-arm64.zip)，适用于 **macOS 14 或更新版本的 Apple Silicon（M 系列）Mac**。解压后将 `Daylight.app` 拖入“应用程序”并打开。此二进制包不支持 Intel Mac。
 
-安装包、源码和校验文件均可在 [v2.3.1 发布页面](https://github.com/liyizhen127/Daylight/releases/tag/v2.3.1)获取。当前使用 ad-hoc 签名，**尚未经过 Apple 公证**，首次打开时 macOS 可能阻止运行并要求用户确认。文件说明和校验方法见[中英版本说明](docs/releases/v2.3.1.md)。
+安装包、源码和校验文件均可在 [v2.4.0 发布页面](https://github.com/liyizhen127/Daylight/releases/tag/v2.4.0)获取。当前使用 ad-hoc 签名，**尚未经过 Apple 公证**，首次打开时 macOS 可能阻止运行并要求用户确认。文件说明和校验方法见[中英版本说明](docs/releases/v2.4.0.md)。
 
 ## 从源码构建
 
@@ -73,6 +75,8 @@ DAYLIGHT_BUILD_ROOT="$PWD/build-release" bash scripts/build-app.sh
 | `⌘,` | 番茄钟与日历设置 |
 | `⌘S` / `⌘E` | 保存 / 导出当天 Markdown |
 
+按 ⌘, 打开「每日计划同步」，分别选择提醒事项清单和反思日历并开启。选中日期后点击「同步这一天」可立即补同步。macOS 15 及以上可在苹果日历侧栏勾选「计划的提醒事项」，在对应日期的全天区域看到目标。
+
 详细操作、旧版迁移和计时行为见 [使用指南（英文）](docs/USAGE.md)。
 
 ## 番茄如何统计
@@ -106,7 +110,7 @@ DAYLIGHT_BUILD_ROOT="$PWD/build-release" bash scripts/build-app.sh
 swift test --disable-sandbox
 ```
 
-完整测试需要可访问 macOS 图形服务的桌面环境，包含原生输入法组词、应用交互与 SpriteKit 场景测试。当前版本共有 46 项测试，验证范围和限制见 [验证说明（英文）](docs/VERIFICATION.md)。
+完整测试需要可访问 macOS 图形服务的桌面环境，包含原生输入法组词、应用交互与 SpriteKit 场景测试。当前版本共有 51 项测试，验证范围和限制见 [验证说明（英文）](docs/VERIFICATION.md)。
 
 ```text
 .

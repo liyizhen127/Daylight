@@ -36,6 +36,7 @@ backups/
 exports/
 Application Support/
 planner*.json
+daily-apple-sync.json
 before-restore-*.json
 .writer.lock
 *-完整备份-*.json

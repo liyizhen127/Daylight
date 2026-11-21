@@ -1,5 +1,9 @@
 # Verification notes
 
+## Version 2.4.0
+
+51 tests passed (27 core and 24 application tests). A simulated Apple store covered daily task creation, updates, completion counts, removals, manual historical sync, a lost write acknowledgement, permission denial, the 23:00 boundary, and catch-up after relaunch. Live account delivery depends on macOS authorization and the chosen provider.
+
 ## Version 2.3.1: long breaks reset each day
 
 All 46 tests pass (27 core and 19 application tests). Three new regression tests reproduced the former cross-day behavior before the fix. They now verify yesterday's three completions do not trigger today's first long break, today's fourth/eighth completions do, overtime uses the actual completion date across midnight, and relaunches or stale legacy counters do not override saved daily history. Early interruptions remain excluded, and the existing configurable-interval, review, animation, Calendar, and Chinese input tests continue to pass.

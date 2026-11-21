@@ -36,7 +36,7 @@ struct TaskChecklist: View {
                 if let deleting { model.removeTask(deleting.id, scope: scope, day: day) }
                 deleting = nil
             }
-        } message: { Text("已记录的番茄时段和日历日程会保留。完成任务只需勾选，无需删除。") }
+        } message: { Text(scope == nil ? "已记录的专注时段会保留。若已开启提醒事项同步，对应提醒也会移除。" : "完成任务只需勾选，无需删除。") }
     }
     private func taskRow(_ task: GoalTask) -> some View {
         HStack(alignment: .top, spacing: 9) {
